@@ -1,14 +1,12 @@
-import {
-  AcademicCapIcon,
-  ArrowDownTrayIcon,
-  MapIcon,
-} from '@heroicons/react/24/outline';
+import {AcademicCapIcon, ArrowDownTrayIcon, MapIcon} from '@heroicons/react/24/outline';
 
+import GithubIcon from '../components/Icon/GithubIcon';
+import LinkedInIcon from '../components/Icon/LinkedInIcon';
+import TwitterIcon from '../components/Icon/TwitterIcon';
 import heroImage from '../images/header-background.webp';
 import porfolioImage1 from '../images/portfolio/portfolio-1.jpg';
 import profilepic from '../images/profilepic.jpg';
 import testimonialImage from '../images/testimonial.webp';
-
 import {
   About,
   ContactSection,
@@ -56,16 +54,12 @@ export const heroData: Hero = {
   description: (
     <>
       <p className="prose-sm text-stone-200 sm:prose-base lg:prose-lg">
-        I'm an India Based{' '}
-        <strong className="text-stone-100">
-          Full Stack Web Developer
-        </strong>
+        I'm an India Based <strong className="text-stone-100">Full Stack Web Developer</strong>
       </p>
 
       <p className="prose-sm text-stone-200 sm:prose-base lg:prose-lg">
-        I build responsive, scalable, and user-friendly web applications using
-        modern technologies such as TypeScript, React.js, Next.js, Node.js,
-        Express.js, PostgreSQL, and Tailwind CSS.
+        I build responsive, scalable, and user-friendly web applications using modern technologies such as TypeScript,
+        React.js, Next.js, Node.js, Express.js, PostgreSQL, and Tailwind CSS.
       </p>
     </>
   ),
@@ -219,11 +213,7 @@ export const education: TimelineItem[] = [
     date: '2021 - 2024',
     location: 'Indra Gandhi National Open University',
     title: 'Bachelor of Arts (English)',
-    content: (
-      <p>
-        Bachelor of Arts in English from Indra Gandhi National Open University.
-      </p>
-    ),
+    content: <p>Bachelor of Arts in English from Indra Gandhi National Open University.</p>,
   },
 ];
 
@@ -244,8 +234,7 @@ export const testimonial: TestimonialSection = {
  */
 export const contact: ContactSection = {
   headerText: 'Get in touch.',
-  description:
-    'Feel free to reach out for professional opportunities, collaborations, or web development projects.',
+  description: 'Feel free to reach out for professional opportunities, collaborations, or web development projects.',
 
   items: [
     {
@@ -264,7 +253,22 @@ export const contact: ContactSection = {
 /**
  * Social items
  *
- * Social profile URLs were not provided in the resume,
- * so no unverified links have been added.
+ * Add your social profile URLs here
  */
-export const socialLinks: Social[] = [];
+export const socialLinks: Social[] = [
+  {
+    label: 'GitHub',
+    Icon: GithubIcon,
+    href: 'https://github.com/shubhamdeo',
+  },
+  {
+    label: 'LinkedIn',
+    Icon: LinkedInIcon,
+    href: 'https://linkedin.com/in/shubhamdeo',
+  },
+  {
+    label: 'Twitter',
+    Icon: TwitterIcon,
+    href: 'https://twitter.com/shubhamdeo',
+  },
+];
