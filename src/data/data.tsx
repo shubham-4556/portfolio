@@ -3,7 +3,6 @@ import {AcademicCapIcon, ArrowDownTrayIcon, MapIcon} from '@heroicons/react/24/o
 import GithubIcon from '../components/Icon/GithubIcon';
 import InstagramIcon from '../components/Icon/InstagramIcon';
 import LinkedInIcon from '../components/Icon/LinkedInIcon';
-import TwitterIcon from '../components/Icon/TwitterIcon';
 import heroImage from '../images/header-background.webp';
 import porfolioImage1 from '../images/portfolio/portfolio-1.jpg';
 import profilepic from '../images/profilepic.jpg';
@@ -203,12 +202,7 @@ export const socialLinks: Social[] = [
   {
     label: 'LinkedIn',
     Icon: LinkedInIcon,
-    href: 'https://linkedin.com/in/shubhamdeo',
-  },
-  {
-    label: 'Twitter',
-    Icon: TwitterIcon,
-    href: 'https://twitter.com/shubhamdeo',
+    href: 'https://www.linkedin.com/in/shubham-kumar-deo-2a923a287?utm_source=share_via&utm_content=profile&utm_medium=member_android',
   },
   {
     label: 'Instagram',

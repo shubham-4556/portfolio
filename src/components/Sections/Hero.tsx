@@ -2,7 +2,7 @@
 'use client';
 
 import {ChevronDownIcon} from '@heroicons/react/24/outline';
-import {motion} from 'framer-motion';
+import {motion, useScroll, useTransform} from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import {memo} from 'react';
@@ -19,6 +19,8 @@ import {heroData, SectionId} from '@/data/data';
 
 const Hero = () => {
   const {name, description, actions} = heroData;
+  const {scrollY} = useScroll();
+  const scrollFade = useTransform(scrollY, [0, 120], [1, 0]);
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden" id={SectionId.Hero}>
@@ -136,24 +138,26 @@ const Hero = () => {
             transition={{duration: 0.8, delay: 1, ease: [0.175, 0.885, 0.32, 1.275]}}>
             <Socials />
           </motion.div>
-        </div>
 
-        {/* Scroll Indicator */}
-        <motion.div
-          animate={{opacity: 1}}
-          className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 text-gray-400"
-          initial={{opacity: 0}}
-          transition={{delay: 1.5, duration: 1}}>
-          <span className="text-xs font-medium uppercase tracking-widest">Scroll to explore</span>
-          <Link
-            aria-label="Scroll to about section"
-            className="w-12 h-12 flex items-center justify-center rounded-full bg-white/5 backdrop-blur-sm border border-white/10 hover:border-orange-500/50 hover:bg-orange-500/10 transition-all duration-300"
-            href={`#${SectionId.About}`}>
-            <motion.div animate={{y: [0, 8, 0]}} transition={{duration: 1.5, repeat: Infinity, ease: 'easeInOut'}}>
-              <ChevronDownIcon className="w-6 h-6" />
+          {/* Scroll Indicator */}
+          <motion.div
+            animate={{opacity: 1}}
+            className="mt-16 flex flex-col items-center gap-3 text-gray-400"
+            initial={{opacity: 0}}
+            transition={{delay: 1.5, duration: 0.8}}>
+            <motion.div className="flex flex-col items-center gap-3" style={{opacity: scrollFade}}>
+              <span className="text-xs font-medium uppercase tracking-widest">Scroll to explore</span>
+              <Link
+                aria-label="Scroll to about section"
+                className="flex h-12 w-12 items-center justify-center rounded-full bg-white/5 backdrop-blur-sm border border-white/10 hover:border-orange-500/50 hover:bg-orange-500/10 transition-all duration-300"
+                href={`#${SectionId.About}`}>
+                <motion.div animate={{y: [0, 8, 0]}} transition={{duration: 1.5, repeat: Infinity, ease: 'easeInOut'}}>
+                  <ChevronDownIcon className="h-6 w-6" />
+                </motion.div>
+              </Link>
             </motion.div>
-          </Link>
-        </motion.div>
+          </motion.div>
+        </div>
       </div>
     </section>
   );
