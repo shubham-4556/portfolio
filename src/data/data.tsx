@@ -197,7 +197,7 @@ export const socialLinks: Social[] = [
   {
     label: 'GitHub',
     Icon: GithubIcon,
-    href: 'https://github.com/shubhamdeo',
+    href: 'https://github.com/shubham-4556',
   },
   {
     label: 'LinkedIn',
