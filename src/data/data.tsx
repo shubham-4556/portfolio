@@ -1,14 +1,13 @@
-import {
-  AcademicCapIcon,
-  ArrowDownTrayIcon,
-  MapIcon,
-} from '@heroicons/react/24/outline';
+import {AcademicCapIcon, ArrowDownTrayIcon, MapIcon} from '@heroicons/react/24/outline';
 
+import GithubIcon from '../components/Icon/GithubIcon';
+import InstagramIcon from '../components/Icon/InstagramIcon';
+import LinkedInIcon from '../components/Icon/LinkedInIcon';
+import TwitterIcon from '../components/Icon/TwitterIcon';
 import heroImage from '../images/header-background.webp';
 import porfolioImage1 from '../images/portfolio/portfolio-1.jpg';
 import profilepic from '../images/profilepic.jpg';
 import testimonialImage from '../images/testimonial.webp';
-
 import {
   About,
   ContactSection,
@@ -31,9 +30,6 @@ export const homePageMeta: HomepageMeta = {
     'Full Stack Web Developer skilled in TypeScript, React.js, Next.js, Node.js, Express.js, PostgreSQL, Tailwind CSS, AI Agents, and MCP.',
 };
 
-/**
- * Section definition
- */
 export const SectionId = {
   Hero: 'hero',
   About: 'about',
@@ -56,16 +52,12 @@ export const heroData: Hero = {
   description: (
     <>
       <p className="prose-sm text-stone-200 sm:prose-base lg:prose-lg">
-        I'm an India Based{' '}
-        <strong className="text-stone-100">
-          Full Stack Web Developer
-        </strong>
+        I'm an India Based <strong className="text-stone-100">Full Stack Web Developer</strong>
       </p>
 
       <p className="prose-sm text-stone-200 sm:prose-base lg:prose-lg">
-        I build responsive, scalable, and user-friendly web applications using
-        modern technologies such as TypeScript, React.js, Next.js, Node.js,
-        Express.js, PostgreSQL, and Tailwind CSS.
+        I build responsive, scalable, and user-friendly web applications using modern technologies such as TypeScript,
+        React.js, Next.js, Node.js, Express.js, PostgreSQL, and Tailwind CSS.
       </p>
     </>
   ),
@@ -115,85 +107,26 @@ export const aboutData: About = {
 export const skills: SkillGroup[] = [
   {
     name: 'Frontend Development',
-    skills: [
-      {
-        name: 'TypeScript',
-        level: 8,
-      },
-      {
-        name: 'JavaScript',
-        level: 8,
-      },
-      {
-        name: 'React.js',
-        level: 8,
-      },
-      {
-        name: 'Next.js',
-        level: 8,
-      },
-      {
-        name: 'Tailwind CSS',
-        level: 8,
-      },
-    ],
+    skills: [{name: 'TypeScript'}, {name: 'JavaScript'}, {name: 'React.js'}, {name: 'Next.js'}, {name: 'Tailwind CSS'}],
   },
 
   {
     name: 'Backend Development',
-    skills: [
-      {
-        name: 'Node.js',
-        level: 8,
-      },
-      {
-        name: 'Express.js',
-        level: 8,
-      },
-      {
-        name: 'REST APIs',
-        level: 8,
-      },
-    ],
+    skills: [{name: 'Node.js'}, {name: 'Express.js'}, {name: 'REST APIs'}],
   },
 
   {
     name: 'Database & Authentication',
-    skills: [
-      {
-        name: 'PostgreSQL',
-        level: 8,
-      },
-      {
-        name: 'SQL',
-        level: 8,
-      },
-      {
-        name: 'JWT Authentication',
-        level: 7,
-      },
-    ],
+    skills: [{name: 'PostgreSQL'}, {name: 'SQL'}, {name: 'JWT Authentication'}],
   },
 
   {
     name: 'AI & Development Tools',
     skills: [
-      {
-        name: 'LLM API Integration',
-        level: 7,
-      },
-      {
-        name: 'MCP (Model Context Protocol)',
-        level: 7,
-      },
-      {
-        name: 'AI Agents & Tool Calling',
-        level: 7,
-      },
-      {
-        name: 'Git & GitHub',
-        level: 7,
-      },
+      {name: 'LLM API Integration'},
+      {name: 'MCP (Model Context Protocol)'},
+      {name: 'AI Agents & Tool Calling'},
+      {name: 'Git & GitHub'},
     ],
   },
 ];
@@ -219,11 +152,7 @@ export const education: TimelineItem[] = [
     date: '2021 - 2024',
     location: 'Indra Gandhi National Open University',
     title: 'Bachelor of Arts (English)',
-    content: (
-      <p>
-        Bachelor of Arts in English from Indra Gandhi National Open University.
-      </p>
-    ),
+    content: <p>Bachelor of Arts in English from Indra Gandhi National Open University.</p>,
   },
 ];
 
@@ -244,8 +173,7 @@ export const testimonial: TestimonialSection = {
  */
 export const contact: ContactSection = {
   headerText: 'Get in touch.',
-  description:
-    'Feel free to reach out for professional opportunities, collaborations, or web development projects.',
+  description: 'Feel free to reach out for professional opportunities, collaborations, or web development projects.',
 
   items: [
     {
@@ -264,7 +192,27 @@ export const contact: ContactSection = {
 /**
  * Social items
  *
- * Social profile URLs were not provided in the resume,
- * so no unverified links have been added.
+ * Add your social profile URLs here
  */
-export const socialLinks: Social[] = [];
+export const socialLinks: Social[] = [
+  {
+    label: 'GitHub',
+    Icon: GithubIcon,
+    href: 'https://github.com/shubhamdeo',
+  },
+  {
+    label: 'LinkedIn',
+    Icon: LinkedInIcon,
+    href: 'https://linkedin.com/in/shubhamdeo',
+  },
+  {
+    label: 'Twitter',
+    Icon: TwitterIcon,
+    href: 'https://twitter.com/shubhamdeo',
+  },
+  {
+    label: 'Instagram',
+    Icon: InstagramIcon,
+    href: 'https://www.instagram.com/subhamm__05?utm_source=qr&stkn=cXJxaW4xcDR1ZzMw',
+  },
+];
