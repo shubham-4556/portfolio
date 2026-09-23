@@ -112,12 +112,12 @@ const Hero = () => {
           {/* CTA Buttons */}
           <motion.div
             animate={{opacity: 1, y: 0}}
-            className="mb-16 flex flex-col sm:flex-row items-center justify-center gap-4"
+            className="mb-16 mx-auto grid w-full max-w-lg grid-cols-1 gap-4 sm:grid-cols-2"
             initial={{opacity: 0, y: 30}}
             transition={{duration: 0.8, delay: 0.8, ease: [0.175, 0.885, 0.32, 1.275]}}>
             {actions.map((action, _index) => (
               <MagneticButton
-                className="w-full sm:w-48"
+                className="w-full"
                 href={action.href}
                 key={action.text}
                 rel={action.href.startsWith('#') ? undefined : 'noopener noreferrer'}
