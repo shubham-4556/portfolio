@@ -117,13 +117,14 @@ const Hero = () => {
             transition={{duration: 0.8, delay: 0.8, ease: [0.175, 0.885, 0.32, 1.275]}}>
             {actions.map((action, _index) => (
               <MagneticButton
+                className="w-full sm:w-48"
                 href={action.href}
                 key={action.text}
                 rel={action.href.startsWith('#') ? undefined : 'noopener noreferrer'}
                 size="lg"
                 strength={25}
                 target={action.href.startsWith('#') ? undefined : '_blank'}
-                variant={action.primary ? 'primary' : 'outline'}>
+                variant="primary">
                 {action.text}
                 {action.Icon && <action.Icon className="w-5 h-5" />}
               </MagneticButton>
