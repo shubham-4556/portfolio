@@ -25,6 +25,8 @@ const itemVariants: Variants = {
 const Testimonials: FC = memo(() => {
   const [list, setList] = useState<PublicTestimonial[]>(FALLBACK_TESTIMONIALS);
   const [modalOpen, setModalOpen] = useState(false);
+  const [activePage, setActivePage] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const shouldReduceMotion = useReducedMotion();
   const scrollRef = useRef<HTMLDivElement>(null);
   const handleCloseModal = useCallback(() => setModalOpen(false), []);
@@ -43,6 +45,40 @@ const Testimonials: FC = memo(() => {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    const element = scrollRef.current;
+    if (!element) return;
+    const recompute = () => {
+      setTotalPages(Math.max(1, Math.round(element.scrollWidth / element.clientWidth)));
+      setActivePage(Math.round(element.scrollLeft / element.clientWidth));
+    };
+    recompute();
+    const observer = new ResizeObserver(recompute);
+    observer.observe(element);
+    window.addEventListener('resize', recompute);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', recompute);
+    };
+  }, []);
+
+  const handleScroll = useCallback(() => {
+    const element = scrollRef.current;
+    if (!element) return;
+    setActivePage(Math.round(element.scrollLeft / element.clientWidth));
+  }, []);
+
+  const scrollToPage = useCallback(
+    (page: number) => {
+      const element = scrollRef.current;
+      if (!element) return;
+      const clamped = Math.min(Math.max(page, 0), totalPages - 1);
+      element.scrollTo({left: clamped * element.clientWidth, behavior: shouldReduceMotion ? 'auto' : 'smooth'});
+      setActivePage(clamped);
+    },
+    [shouldReduceMotion, totalPages],
+  );
 
   const scrollToNext = useCallback(() => {
     const element = scrollRef.current;
@@ -105,10 +141,11 @@ const Testimonials: FC = memo(() => {
             whileInView="show">
             <div
               className="no-scrollbar flex touch-pan-x snap-x snap-mandatory gap-6 overflow-x-auto scroll-smooth"
+              onScroll={handleScroll}
               ref={scrollRef}>
               {list.map(item => (
                 <motion.div
-                  className="min-w-full shrink-0 snap-start sm:min-w-[calc(50%-0.75rem)] lg:min-w-[calc(33.333%-1rem)]"
+                  className="w-full shrink-0 snap-start sm:w-[calc(50%-0.75rem)] lg:w-[calc(33.333%-1rem)]"
                   key={item.id}
                   variants={itemVariants}>
                   <TestimonialCard testimonial={item} />
@@ -124,6 +161,28 @@ const Testimonials: FC = memo(() => {
                 type="button">
                 <ArrowLeftIcon className="h-5 w-5" />
               </button>
+              {totalPages > 1 && (
+                <div aria-label="Testimonial pages" className="mx-2 flex items-center gap-2" role="tablist">
+                  {Array.from({length: totalPages}, (_, index) => {
+                    const isActive = index === activePage;
+                    return (
+                      <button
+                        aria-label={`Go to testimonial page ${index + 1}`}
+                        aria-selected={isActive}
+                        className={`h-2 rounded-full transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 ${
+                          isActive
+                            ? 'w-6 bg-gradient-to-r from-orange-500 to-orange-600'
+                            : 'w-2 bg-white/20 hover:bg-white/40'
+                        }`}
+                        key={`dot-${index}`}
+                        onClick={() => scrollToPage(index)}
+                        role="tab"
+                        type="button"
+                      />
+                    );
+                  })}
+                </div>
+              )}
               <button
                 aria-label="Next testimonials"
                 className="rounded-full border border-white/10 bg-white/5 p-2 text-neutral-300 transition-all duration-300 hover:border-orange-500/50 hover:text-orange-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
