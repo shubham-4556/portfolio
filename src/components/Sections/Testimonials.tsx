@@ -1,141 +1,167 @@
-import classNames from 'classnames';
-import {FC, memo, UIEventHandler, useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {ArrowLeftIcon, ArrowRightIcon} from '@heroicons/react/24/outline';
+import {motion, useReducedMotion, Variants} from 'framer-motion';
+import {FC, memo, useCallback, useEffect, useRef, useState} from 'react';
 
-import {SectionId, testimonial} from '../../data/data';
-import {Testimonial} from '../../data/dataDef';
-import useInterval from '../../hooks/useInterval';
-import useWindow from '../../hooks/useWindow';
-import QuoteIcon from '../Icon/QuoteIcon';
+import {SectionId} from '../../data/data';
+import {FALLBACK_TESTIMONIALS} from '../../lib/testimonials/fallback';
+import {PublicTestimonial} from '../../lib/testimonials/types';
 import Section from '../Layout/Section';
+import {GradientText} from '../ui/AnimatedText';
+import TestimonialCard from './Testimonials/TestimonialCard';
+import TestimonialModal from './Testimonials/TestimonialModal';
 
-const isApple = false;
-const isMobile = false;
+const easing = [0.175, 0.885, 0.32, 1.275] as const;
+
+const containerVariants: Variants = {
+  hidden: {},
+  show: {transition: {staggerChildren: 0.12, delayChildren: 0.1}},
+};
+
+const itemVariants: Variants = {
+  hidden: {opacity: 0, y: 30},
+  show: {opacity: 1, y: 0, transition: {duration: 0.55, ease: easing}},
+};
 
 const Testimonials: FC = memo(() => {
-  const [activeIndex, setActiveIndex] = useState<number>(0);
-  const [scrollValue, setScrollValue] = useState(0);
-  const [parallaxEnabled, setParallaxEnabled] = useState(false);
+  const [list, setList] = useState<PublicTestimonial[]>(FALLBACK_TESTIMONIALS);
+  const [modalOpen, setModalOpen] = useState(false);
+  const shouldReduceMotion = useReducedMotion();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const handleCloseModal = useCallback(() => setModalOpen(false), []);
 
-  const itemWidth = useRef(0);
-  const scrollContainer = useRef<HTMLDivElement>(null);
-
-  const {width} = useWindow();
-
-  const {imageSrc, testimonials} = testimonial;
-
-  const resolveSrc = useMemo(() => {
-    if (!imageSrc) return undefined;
-    return typeof imageSrc === 'string' ? imageSrc : imageSrc.src;
-  }, [imageSrc]);
-
-  // Mobile iOS doesn't allow background-fixed elements
   useEffect(() => {
-    setParallaxEnabled(!(isMobile && isApple));
+    let active = true;
+    fetch('/api/testimonials')
+      .then(response => (response.ok ? response.json() : Promise.reject(new Error('fetch failed'))))
+      .then((payload: {testimonials?: PublicTestimonial[]}) => {
+        if (active && Array.isArray(payload.testimonials) && payload.testimonials.length > 0) {
+          setList(payload.testimonials);
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
   }, []);
 
-  useEffect(() => {
-    itemWidth.current = scrollContainer.current ? scrollContainer.current.offsetWidth : 0;
-  }, [width]);
-
-  useEffect(() => {
-    if (scrollContainer.current) {
-      const newIndex = Math.round(scrollContainer.current.scrollLeft / itemWidth.current);
-      setActiveIndex(newIndex);
-    }
-  }, [itemWidth, scrollValue]);
-
-  const setTestimonial = useCallback(
-    (index: number) => () => {
-      if (scrollContainer !== null && scrollContainer.current !== null) {
-        scrollContainer.current.scrollLeft = itemWidth.current * index;
-      }
-    },
-    [],
-  );
-  const next = useCallback(() => {
-    if (activeIndex + 1 === testimonials.length) {
-      setTestimonial(0)();
+  const scrollToNext = useCallback(() => {
+    const element = scrollRef.current;
+    if (!element) return;
+    const maxScroll = element.scrollWidth - element.clientWidth;
+    if (element.scrollLeft >= maxScroll - 4) {
+      element.scrollTo({left: 0, behavior: shouldReduceMotion ? 'auto' : 'smooth'});
     } else {
-      setTestimonial(activeIndex + 1)();
+      element.scrollBy({left: element.clientWidth, behavior: shouldReduceMotion ? 'auto' : 'smooth'});
     }
-  }, [activeIndex, setTestimonial, testimonials.length]);
+  }, [shouldReduceMotion]);
 
-  const handleScroll = useCallback<UIEventHandler<HTMLDivElement>>(event => {
-    setScrollValue(event.currentTarget.scrollLeft);
-  }, []);
+  const scrollToPrevious = useCallback(() => {
+    const element = scrollRef.current;
+    if (!element) return;
+    if (element.scrollLeft <= 4) {
+      element.scrollTo({left: element.scrollWidth, behavior: shouldReduceMotion ? 'auto' : 'smooth'});
+    } else {
+      element.scrollBy({left: -element.clientWidth, behavior: shouldReduceMotion ? 'auto' : 'smooth'});
+    }
+  }, [shouldReduceMotion]);
 
-  useInterval(next, 10000);
-
-  // If no testimonials, don't render the section
-  if (!testimonials.length) {
-    return null;
-  }
+  useEffect(() => {
+    if (shouldReduceMotion) return;
+    const interval = setInterval(scrollToNext, 9000);
+    return () => clearInterval(interval);
+  }, [scrollToNext, shouldReduceMotion]);
 
   return (
-    <Section noPadding sectionId={SectionId.Testimonials}>
-      <div
-        className={classNames(
-          'flex w-full items-center justify-center bg-cover bg-center px-4 py-16 sm:px-6 md:px-8 md:py-24',
-          parallaxEnabled && 'bg-fixed',
-          {'bg-neutral-700': !imageSrc},
-        )}
-        style={imageSrc ? {backgroundImage: `url(${resolveSrc})`} : undefined}>
-        <div className="z-10 w-full max-w-screen-md px-4 lg:px-0">
-          <div className="flex flex-col items-center gap-y-6 rounded-xl bg-gray-800/60 p-6 shadow-lg">
+    <Section className="relative overflow-hidden bg-neutral-900" sectionId={SectionId.Testimonials}>
+      {/* Ambient glows */}
+      <div className="pointer-events-none absolute -left-32 top-1/3 h-96 w-96 rounded-full bg-orange-500/10 blur-3xl" />
+      <div className="pointer-events-none absolute -right-32 bottom-10 h-96 w-96 rounded-full bg-cyan-500/10 blur-3xl" />
+
+      <div className="relative z-10 flex flex-col gap-y-12">
+        {/* Header */}
+        <motion.div
+          className="flex flex-col items-center gap-y-3 text-center"
+          initial={{opacity: 0, y: 30}}
+          transition={{duration: 0.7, ease: easing}}
+          viewport={{once: true, margin: '-80px'}}
+          whileInView={{opacity: 1, y: 0}}>
+          <span className="font-mono text-xs font-bold uppercase tracking-[0.35em] text-orange-500">
+            // 03. Testimonials
+          </span>
+          <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl md:text-5xl">
+            <GradientText gradient="from-orange-400 via-orange-500 to-cyan-400">What People Say</GradientText>
+          </h2>
+          <p className="max-w-xl text-sm text-gray-300 sm:text-base">
+            Feedback from people I&apos;ve worked and collaborated with.
+          </p>
+        </motion.div>
+
+        {list.length > 0 ? (
+          <motion.div
+            className="flex flex-col gap-y-6"
+            initial="hidden"
+            variants={containerVariants}
+            viewport={{once: true, margin: '-80px'}}
+            whileInView="show">
             <div
-              className="no-scrollbar flex w-full touch-pan-x snap-x snap-mandatory gap-x-6 overflow-x-auto scroll-smooth"
-              onScroll={handleScroll}
-              ref={scrollContainer}>
-              {testimonials.map((testimonial, index) => {
-                const isActive = index === activeIndex;
-                return (
-                  <Testimonial isActive={isActive} key={`${testimonial.name}-${index}`} testimonial={testimonial} />
-                );
-              })}
+              className="no-scrollbar flex touch-pan-x snap-x snap-mandatory gap-6 overflow-x-auto scroll-smooth"
+              ref={scrollRef}>
+              {list.map(item => (
+                <motion.div
+                  className="min-w-full shrink-0 snap-start sm:min-w-[calc(50%-0.75rem)] lg:min-w-[calc(33.333%-1rem)]"
+                  key={item.id}
+                  variants={itemVariants}>
+                  <TestimonialCard testimonial={item} />
+                </motion.div>
+              ))}
             </div>
-            <div className="flex gap-x-4">
-              {[...Array(testimonials.length)].map((_, index) => {
-                const isActive = index === activeIndex;
-                return (
-                  <button
-                    className={classNames(
-                      'h-3 w-3 rounded-full bg-gray-300 transition-all duration-500 sm:h-4 sm:w-4',
-                      isActive ? 'scale-100 opacity-100' : 'scale-75 opacity-60',
-                    )}
-                    disabled={isActive}
-                    key={`select-button-${index}`}
-                    onClick={setTestimonial(index)}></button>
-                );
-              })}
+
+            <div className="flex items-center justify-center gap-3">
+              <button
+                aria-label="Previous testimonials"
+                className="rounded-full border border-white/10 bg-white/5 p-2 text-neutral-300 transition-all duration-300 hover:border-orange-500/50 hover:text-orange-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+                onClick={scrollToPrevious}
+                type="button">
+                <ArrowLeftIcon className="h-5 w-5" />
+              </button>
+              <button
+                aria-label="Next testimonials"
+                className="rounded-full border border-white/10 bg-white/5 p-2 text-neutral-300 transition-all duration-300 hover:border-orange-500/50 hover:text-orange-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+                onClick={scrollToNext}
+                type="button">
+                <ArrowRightIcon className="h-5 w-5" />
+              </button>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        ) : null}
+
+        {/* CTA */}
+        <motion.div
+          className="mx-auto w-full max-w-2xl overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] p-8 text-center backdrop-blur-sm sm:p-10"
+          initial={{opacity: 0, y: 30}}
+          transition={{duration: 0.7, ease: easing}}
+          viewport={{once: true, margin: '-60px'}}
+          whileInView={{opacity: 1, y: 0}}>
+          <h3 className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">Worked with me?</h3>
+          <p className="mx-auto mt-2 max-w-md text-sm text-neutral-400 sm:text-base">
+            I&apos;d love to hear about your experience working together.
+          </p>
+          <motion.button
+            className="group mt-6 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-orange-600 px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-500/25 transition-all duration-300 hover:from-orange-600 hover:to-orange-700 hover:shadow-orange-500/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-900"
+            onClick={() => setModalOpen(true)}
+            type="button"
+            whileHover={shouldReduceMotion ? undefined : {scale: 1.03}}
+            whileTap={shouldReduceMotion ? undefined : {scale: 0.97}}>
+            Give a Testimonial
+            <ArrowRightIcon className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
+          </motion.button>
+        </motion.div>
       </div>
+
+      <TestimonialModal onClose={handleCloseModal} open={modalOpen} />
     </Section>
   );
 });
 
-const Testimonial: FC<{testimonial: Testimonial; isActive: boolean}> = memo(
-  ({testimonial: {text, name, image}, isActive}) => (
-    <div
-      className={classNames(
-        'flex w-full shrink-0 snap-start snap-always flex-col items-start gap-y-4 p-2 transition-opacity duration-1000 sm:flex-row sm:gap-x-6',
-        isActive ? 'opacity-100' : 'opacity-0',
-      )}>
-      {image ? (
-        <div className="relative h-14 w-14 shrink-0 sm:h-16 sm:w-16">
-          <QuoteIcon className="absolute -left-2 -top-2 h-4 w-4 stroke-black text-white" />
-          <img className="h-full w-full rounded-full" src={image} />
-        </div>
-      ) : (
-        <QuoteIcon className="h-5 w-5 shrink-0 text-white sm:h-8 sm:w-8" />
-      )}
-      <div className="flex flex-col gap-y-4">
-        <p className="prose prose-sm font-medium italic text-white sm:prose-base">{text}</p>
-        <p className="text-xs italic text-white sm:text-sm md:text-base lg:text-lg">-- {name}</p>
-      </div>
-    </div>
-  ),
-);
-
+Testimonials.displayName = 'Testimonials';
 export default Testimonials;

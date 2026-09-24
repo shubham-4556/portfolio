@@ -116,8 +116,44 @@ All content lives in `src/data/data.tsx`:
 - **Hero** — name, tagline, tech badges, and CTA actions in `heroData`.
 - **Skills** — add/remove skills in the `skills` groups (rendered as chips).
 - **Projects** — replace entries in `portfolioItems`; add images to `public/images/` or `src/images/`.
-- **Resume** — education and experience entries in `education` and `experience`.
+- **Resume** — add/remove skills in the `skills` groups; the animated background is in `src/components/Sections/Resume/Background.tsx`.
 - **Theme colors** — adjust tokens in `src/styles/theme.css`.
+
+## Testimonials API
+
+The testimonial section is backed by a small JSON API. Public consumers only see **approved** records; submitter emails are never exposed and are used solely for moderation.
+
+### Endpoints
+
+| Method | Route | Auth | Description |
+| ------ | ----- | ---- | ----------- |
+| `GET` | `/api/testimonials` | — | Returns `{ testimonials }` of approved records only. |
+| `POST` | `/api/testimonials` | — | Validates and creates a `pending` record. Rate-limited to 3/15 min per IP (in-memory). Returns `201` with `"Your testimonial has been submitted successfully and will be reviewed before being published."` |
+| `PATCH` | `/api/testimonials/:id/approve` | Admin token | Approves a pending record (publishes it). |
+| `PATCH` | `/api/testimonials/:id/reject` | Admin token | Rejects a pending record (deletes it). |
+| `DELETE` | `/api/testimonials/:id` | Admin token | Removes any record. |
+
+### Moderation
+
+Send the admin token via the `x-admin-token` request header or an `?admin_token=` query param:
+
+```bash
+curl -X PATCH "https://your-domain/api/testimonials/<id>/approve" -H "x-admin-token: $TESTIMONIALS_ADMIN_TOKEN"
+```
+
+There is intentionally **no admin dashboard** — moderation is done via these protected endpoints (e.g. with a local script or API client).
+
+### Environment variables
+
+| Variable | Required | Description |
+| -------- | -------- | ----------- |
+| `TESTIMONIALS_ADMIN_TOKEN` | For moderation | Secret token used to auth approve/reject/delete requests. Kept server-side only — never expose in client code. |
+| `TESTIMONIALS_NOTIFY_URL` | Optional | Webhook URL. On each submission a structured payload (with token-signed approve/reject links) is POSTed here; if unset, the payload is logged to the server console. |
+| `TESTIMONIALS_DSN` | Optional | Reserved for a production database (e.g. Postgres). Not yet used — see storage note below. |
+
+### Storage note
+
+The default store (`src/lib/testimonials/store.ts`) persists to `data/testimonials.json`, which is gitignored and **auto-seeds** three sample testimonials on first read. Everything sits behind the `TestimonialStore` interface, so a Postgres adapter can be dropped in when you're ready to switch from the file store. Keep in mind that Vercel's serverless filesystem is ephemeral, so the file store is best for development; use a durable store for production data.
 
 ## Deployment
 

@@ -35,3 +35,5 @@ yarn-error.log*
 
 # vercel
 .vercel
+# runtime store (regenerated from code seed)
+/data/

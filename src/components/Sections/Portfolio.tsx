@@ -13,8 +13,6 @@ import {MagneticButton} from '../ui/MagneticButton';
 const easing = [0.175, 0.885, 0.32, 1.275] as const;
 
 const Portfolio: FC = memo(() => {
-  const isSpotlight = portfolioItems.length === 1;
-
   return (
     <Section className="relative overflow-hidden bg-neutral-800" sectionId={SectionId.Portfolio}>
       {/* Ambient glows */}
@@ -24,9 +22,9 @@ const Portfolio: FC = memo(() => {
       <div className="relative z-10 flex flex-col gap-y-14">
         <SectionHeader />
 
-        <div className={isSpotlight ? 'grid grid-cols-1 gap-8' : 'grid grid-cols-1 gap-8 lg:grid-cols-2'}>
+        <div className="grid auto-rows-fr grid-cols-1 gap-8 sm:grid-cols-2">
           {portfolioItems.map((item, index) => (
-            <ProjectCard featured={isSpotlight} item={item} key={`${item.title}-${index}`} />
+            <ProjectCard item={item} key={`${item.title}-${index}`} />
           ))}
         </div>
       </div>
@@ -59,7 +57,7 @@ const SectionHeader: FC = memo(() => {
 });
 SectionHeader.displayName = 'SectionHeader';
 
-const ProjectCard: FC<{item: PortfolioItem; featured: boolean}> = memo(({item, featured}) => {
+const ProjectCard: FC<{item: PortfolioItem}> = memo(({item}) => {
   const {title, description, url, image, tags, githubUrl} = item;
   const cardRef = useRef<HTMLDivElement>(null);
   const shouldReduceMotion = useReducedMotion();
@@ -89,9 +87,7 @@ const ProjectCard: FC<{item: PortfolioItem; featured: boolean}> = memo(({item, f
 
   return (
     <motion.div
-      className={`group relative overflow-hidden rounded-3xl border border-white/10 bg-neutral-900/60 shadow-xl shadow-black/30 backdrop-blur-sm transition-colors duration-300 hover:border-orange-500/40 ${
-        featured ? 'md:col-span-2' : ''
-      }`}
+      className="group relative flex h-full flex-col overflow-hidden rounded-3xl border border-white/10 bg-neutral-900/60 shadow-xl shadow-black/30 backdrop-blur-sm transition-colors duration-300 hover:border-orange-500/40"
       initial={{opacity: 0, y: 40}}
       ref={cardRef}
       style={{rotateX, rotateY, transformStyle: 'preserve-3d'}}
@@ -102,7 +98,7 @@ const ProjectCard: FC<{item: PortfolioItem; featured: boolean}> = memo(({item, f
         className="flex h-full flex-col gap-6 p-6 sm:p-8"
         onMouseLeave={handleMouseLeave}
         onMouseMove={handleMouseMove}>
-        <div className={`relative aspect-[16/10] overflow-hidden rounded-2xl ${featured ? 'lg:aspect-[16/9]' : ''}`}>
+        <div className="relative aspect-[16/10] overflow-hidden rounded-2xl">
           <motion.div className="h-full w-full" whileHover={shouldReduceMotion ? undefined : {scale: 1.04}}>
             <Image alt={title} className="h-full w-full object-cover" placeholder="blur" src={image} />
           </motion.div>
@@ -117,12 +113,7 @@ const ProjectCard: FC<{item: PortfolioItem; featured: boolean}> = memo(({item, f
         </div>
 
         <div className="flex flex-1 flex-col justify-center gap-4">
-          <h3
-            className={`font-extrabold tracking-tight text-white ${
-              featured ? 'text-2xl sm:text-3xl' : 'text-xl sm:text-2xl'
-            }`}>
-            {title}
-          </h3>
+          <h3 className="text-xl font-extrabold tracking-tight text-white sm:text-2xl">{title}</h3>
 
           {tags && tags.length > 0 && (
             <div className="flex flex-wrap gap-2">
