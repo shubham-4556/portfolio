@@ -16,53 +16,26 @@ export interface TestimonialStore {
   remove(id: string): Promise<boolean>;
 }
 
-const seed: TestimonialRecord[] = [
-  {
-    id: 'seed-frontend-lead',
-    name: 'Aarav Sharma',
-    email: 'seed+frontend@example.com',
-    role: 'Frontend Lead',
-    company: 'Nimbus Labs',
-    testimonial:
-      'Shubham brought the AI support platform to life — the interface is fast, polished, and a joy to use on every device.',
-    rating: 5,
-    linkedinUrl: 'https://www.linkedin.com/',
-    profileImage: undefined,
-    status: 'approved',
-    createdAt: '2026-08-01T09:00:00.000Z',
-    approvedAt: '2026-08-02T09:00:00.000Z',
-  },
-  {
-    id: 'seed-product-manager',
-    name: 'Priya Patel',
-    email: 'seed+pm@example.com',
-    role: 'Product Manager',
-    company: 'Cloudly',
-    testimonial:
-      'Reliable, communicative, and technically precise. The MCP integration work fundamentally improved how our support team operates.',
-    rating: 5,
-    linkedinUrl: 'https://www.linkedin.com/',
-    profileImage: undefined,
-    status: 'approved',
-    createdAt: '2026-08-05T09:00:00.000Z',
-    approvedAt: '2026-08-06T09:00:00.000Z',
-  },
-  {
-    id: 'seed-cto',
-    name: 'Rahul Verma',
-    email: 'seed+cto@example.com',
-    role: 'CTO',
-    company: 'Stackline',
-    testimonial:
-      'A full stack developer who cares about the whole product — from database design to pixel-perfect UI. Highly recommended.',
-    rating: 5,
-    linkedinUrl: 'https://www.linkedin.com/',
-    profileImage: undefined,
-    status: 'approved',
-    createdAt: '2026-08-12T09:00:00.000Z',
-    approvedAt: '2026-08-13T09:00:00.000Z',
-  },
-];
+/**
+ * Record format for one testimonial. No pre-seeded examples are shipped;
+ * the store starts empty and grows from approved submissions.
+ *
+ * Example shape:
+ * {
+ *   id: 'uuid',                      // generated
+ *   name: 'Jane Doe',                // required
+ *   email: 'jane@example.com',       // required, moderation only (never public)
+ *   role: 'Product Manager',         // required
+ *   company: 'Acme Inc.',            // optional
+ *   linkedinUrl: 'https://...',      // optional
+ *   profileImage: 'https://...',     // optional
+ *   testimonial: 'Great to work with…', // required
+ *   rating: 5,                       // required, 1-5
+ *   status: 'pending',               // 'pending' | 'approved' | 'rejected'
+ *   createdAt: '2026-09-24T00:00:00.000Z',
+ *   approvedAt: undefined,           // set when approved
+ * }
+ */
 
 const STORE_FILE = path.join(process.cwd(), 'data', 'testimonials.json');
 
@@ -132,8 +105,7 @@ class JsonFileStore implements TestimonialStore {
       const parsed = JSON.parse(raw) as TestimonialRecord[];
       this.cache = Array.isArray(parsed) ? parsed : [];
     } catch {
-      this.cache = seed.map(item => ({...item}));
-      await this.write(this.cache);
+      this.cache = [];
     }
     return this.cache;
   }

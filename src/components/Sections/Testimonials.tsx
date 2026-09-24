@@ -3,7 +3,6 @@ import {motion, useReducedMotion, Variants} from 'framer-motion';
 import {FC, memo, useCallback, useEffect, useRef, useState} from 'react';
 
 import {SectionId} from '../../data/data';
-import {FALLBACK_TESTIMONIALS} from '../../lib/testimonials/fallback';
 import {PublicTestimonial} from '../../lib/testimonials/types';
 import Section from '../Layout/Section';
 import {GradientText} from '../ui/AnimatedText';
@@ -23,7 +22,7 @@ const itemVariants: Variants = {
 };
 
 const Testimonials: FC = memo(() => {
-  const [list, setList] = useState<PublicTestimonial[]>(FALLBACK_TESTIMONIALS);
+  const [list, setList] = useState<PublicTestimonial[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [activePage, setActivePage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);

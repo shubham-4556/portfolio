@@ -153,7 +153,7 @@ There is intentionally **no admin dashboard** — moderation is done via these p
 
 ### Storage note
 
-The default store (`src/lib/testimonials/store.ts`) persists to `data/testimonials.json`, which is gitignored and **auto-seeds** three sample testimonials on first read. Everything sits behind the `TestimonialStore` interface, so a Postgres adapter can be dropped in when you're ready to switch from the file store. Keep in mind that Vercel's serverless filesystem is ephemeral, so the file store is best for development; use a durable store for production data.
+The default store (`src/lib/testimonials/store.ts`) persists to `data/testimonials.json`, which is gitignored and **starts empty** — no fake testimonials are shipped. Everything sits behind the `TestimonialStore` interface, so a Postgres adapter can be dropped in when you're ready to switch from the file store. Keep in mind that Vercel's serverless filesystem is ephemeral, so the file store is best for development; use a durable store for production data.
 
 ## Deployment
 
