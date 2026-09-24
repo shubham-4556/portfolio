@@ -1,5 +1,7 @@
 import {NextApiHandler, NextApiRequest, NextApiResponse} from 'next';
 
+import {sendTestimonialNotification} from '../../../lib/testimonials/email';
+import {requestOrigin} from '../../../lib/testimonials/moderation';
 import {notifySubmission} from '../../../lib/testimonials/notify';
 import {isRateLimited, resolveIp} from '../../../lib/testimonials/rateLimit';
 import {getStore} from '../../../lib/testimonials/store';
@@ -32,7 +34,11 @@ const createHandler: NextApiHandler = async (req: NextApiRequest, res: NextApiRe
 
       const store = getStore();
       const record = await store.create(result.value);
-      await notifySubmission(record);
+
+      // Notify the owner via email and/or webhook. Both are best-effort and
+      // never block or change the 201 response.
+      const origin = requestOrigin(req);
+      await Promise.allSettled([notifySubmission(record, origin), sendTestimonialNotification(record, origin)]);
 
       respond(res, 201, {
         success: true,

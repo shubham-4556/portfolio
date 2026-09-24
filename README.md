@@ -129,8 +129,8 @@ The testimonial section is backed by a small JSON API. Public consumers only see
 | ------ | ----- | ---- | ----------- |
 | `GET` | `/api/testimonials` | — | Returns `{ testimonials }` of approved records only. |
 | `POST` | `/api/testimonials` | — | Validates and creates a `pending` record. Rate-limited to 3/15 min per IP (in-memory). Returns `201` with `"Your testimonial has been submitted successfully and will be reviewed before being published."` |
-| `PATCH` | `/api/testimonials/:id/approve` | Admin token | Approves a pending record (publishes it). |
-| `PATCH` | `/api/testimonials/:id/reject` | Admin token | Rejects a pending record (deletes it). |
+| `PATCH` | `/api/testimonials/:id/approve` | Admin token **or signed link** | Approves a pending record (publishes it). A `GET` with the signed `?sig=` link also works (for email links). |
+| `PATCH` | `/api/testimonials/:id/reject` | Admin token **or signed link** | Rejects a pending record (kept hidden). A `GET` with the signed `?sig=` link also works (for email links). |
 | `DELETE` | `/api/testimonials/:id` | Admin token | Removes any record. |
 
 ### Moderation
@@ -141,15 +141,37 @@ Send the admin token via the `x-admin-token` request header or an `?admin_token=
 curl -X PATCH "https://your-domain/api/testimonials/<id>/approve" -H "x-admin-token: $TESTIMONIALS_ADMIN_TOKEN"
 ```
 
-There is intentionally **no admin dashboard** — moderation is done via these protected endpoints (e.g. with a local script or API client).
+**Signed links.** When notifications are enabled, the emailed Approve/Reject links carry only an HMAC signature (`?sig=…`) computed with `TESTIMONIALS_ADMIN_TOKEN` as the key — the token itself is never placed in a URL. Clicking a link performs the action (GET is accepted for this). Links are bound to the exact record + action, so a link for one testimonial cannot be reused on another.
+
+There is intentionally **no admin dashboard** — moderation is done via these protected endpoints or the emailed links.
 
 ### Environment variables
 
 | Variable | Required | Description |
 | -------- | -------- | ----------- |
-| `TESTIMONIALS_ADMIN_TOKEN` | For moderation | Secret token used to auth approve/reject/delete requests. Kept server-side only — never expose in client code. |
-| `TESTIMONIALS_NOTIFY_URL` | Optional | Webhook URL. On each submission a structured payload (with token-signed approve/reject links) is POSTed here; if unset, the payload is logged to the server console. |
-| `TESTIMONIALS_DSN` | Optional | Postgres connection string. When set, testimonials are stored in a Postgres `testimonials` table (created automatically on first use) via `src/lib/testimonials/postgresStore.ts`. When unset, the JSON-file store is used. |
+| `TESTIMONIALS_ADMIN_TOKEN` | For moderation | Secret token that authorizes approve/reject/delete and is the HMAC key for signed moderation links. Kept server-side only — never expose in client code. |
+| `RESEND_API_KEY` | For email | Resend API key (`re_…`) used to send the new-submission notification email. |
+| `TESTIMONIALS_OWNER_EMAIL` | For email | The address that receives the pending-testimonial email (you). |
+| `TESTIMONIALS_EMAIL_FROM` | Optional | Sender shown on the notification email. Must be on a domain you verified in Resend. Defaults to `Testimonials <onboarding@resend.dev>` (only sends to your own account until a domain is verified). |
+| `TESTIMONIALS_NOTIFY_URL` | Optional | Webhook URL. On each submission a structured payload (with signed approve/reject links) is POSTed here; if unset, the payload is logged to the server console. |
+| `TESTIMONIALS_DSN` | Optional | Postgres connection string. When set, testimonials are stored in a Postgres `testimonials` table (created automatically on first use) via `src/lib/testimonials/postgresStore.ts`. `DATABASE_URL` (from `neon link`) is accepted here as a fallback. When neither is set, the JSON-file store is used. |
+
+### Email notifications (Resend)
+
+Each submission is stored as `pending` in Postgres, and Resend emails the owner with the submitter's name, role, company, testimonial, and signed Approve/Reject links. Only approved testimonials are ever returned by the public `GET`.
+
+**To enable on Vercel:**
+
+1. Go to [resend.com](https://resend.com) → sign in (free tier covers low-volume personal sites).
+2. **Verify a sending domain** (recommended): Resend → **Domains** → *Add Domain* (e.g. `yourdomain.com`) → follow the DNS records (TXT/SPF/DKIM) in your DNS provider → wait for *Verified*. Without this you can only test sending to your own address from `onboarding@resend.dev`.
+3. **Create an API key**: Resend → **API Keys** → *Create API Key* → copy the `re_…` key.
+4. In **Vercel → Project → Settings → Environment Variables** add:
+   - `RESEND_API_KEY` — the `re_…` key from step 3
+   - `TESTIMONIALS_OWNER_EMAIL` — your inbox, e.g. `you@yourdomain.com`
+   - `TESTIMONIALS_EMAIL_FROM` — a verified sender, e.g. `Shubh.dev <noreply@yourdomain.com>` (optional; falls back to `onboarding@resend.dev`)
+5. Redeploy. On the next submission you'll receive the email with Approve/Reject links.
+
+**Locally:** copy `.env.example` → `.env.local` and set the same three variables. If they're unset, submissions are stored but no email is sent (logged to the server console instead) — the API still works.
 
 ### Storage note
 

@@ -1,29 +1,13 @@
+import {buildModerationUrl} from './moderation';
 import {TestimonialRecord} from './types';
-
-function baseOrigin(): string {
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  if (process.env.SITE_URL) return process.env.SITE_URL;
-  return '';
-}
-
-function adminToken(): string | undefined {
-  return process.env.TESTIMONIALS_ADMIN_TOKEN;
-}
-
-/** Builds a server-side-only, token-signed moderation link (approve/reject). */
-export function buildAdminActionUrl(id: string, action: 'approve' | 'reject'): string {
-  const origin = baseOrigin();
-  const base = `${origin}/api/testimonials/${id}/${action}`;
-  const token = adminToken();
-  return token ? `${base}?admin_token=${encodeURIComponent(token)}` : base;
-}
 
 /**
  * Sends or logs a private notification about a new (pending) submission.
- * The email address is backend-internal and only appears in this notification,
+ * Links carry HMAC signatures only — TESTIMONIALS_ADMIN_TOKEN is never placed
+ * in a URL. The submitter email is backend-internal and only appears here,
  * never in public API responses.
  */
-export async function notifySubmission(record: TestimonialRecord): Promise<void> {
+export async function notifySubmission(record: TestimonialRecord, origin: string): Promise<void> {
   const payload = {
     event: 'new_testimonial',
     id: record.id,
@@ -33,8 +17,8 @@ export async function notifySubmission(record: TestimonialRecord): Promise<void>
     testimony: record.testimonial,
     submittedAt: record.createdAt,
     actions: {
-      approve: buildAdminActionUrl(record.id, 'approve'),
-      reject: buildAdminActionUrl(record.id, 'reject'),
+      approve: buildModerationUrl(origin, record.id, 'approve'),
+      reject: buildModerationUrl(origin, record.id, 'reject'),
     },
   };
 
