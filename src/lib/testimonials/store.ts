@@ -1,5 +1,6 @@
 import {randomUUID} from 'crypto';
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 
 import {PublicTestimonial, TestimonialInput, TestimonialRecord, TestimonialStatus, toPublic} from './types';
@@ -37,7 +38,16 @@ export interface TestimonialStore {
  * }
  */
 
-const STORE_FILE = path.join(process.cwd(), 'data', 'testimonials.json');
+/**
+ * Vercel serverless functions have a read-only project filesystem except for
+ * /tmp, so on Vercel we persist to a writable temp path instead of ./data.
+ * Note: /tmp is still ephemeral — use the Postgres adapter for durable
+ * storage. Locally we keep the human-friendly data/testimonials.json.
+ */
+const STORE_FILE =
+  process.env.VERCEL || process.env.VERCEL_ENV
+    ? path.join(os.tmpdir(), 'testimonials.json')
+    : path.join(process.cwd(), 'data', 'testimonials.json');
 
 class JsonFileStore implements TestimonialStore {
   private cache: TestimonialRecord[] | null = null;
