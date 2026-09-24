@@ -105,7 +105,11 @@ const AnimatedTextInner = memo(function AnimatedTextInner({
     </motion.span>
   );
 
-  return <Component className={className} {...props}>{Content}</Component>;
+  return (
+    <Component className={className} {...props}>
+      {Content}
+    </Component>
+  );
 });
 
 export const AnimatedText = AnimatedTextInner;
@@ -140,17 +144,12 @@ export function GradientText({
   children,
   className = '',
   gradient = 'from-orange-500 via-orange-400 to-cyan-400',
-  ...props
 }: {
   children: ReactNode;
   className?: string;
   gradient?: string;
 }) {
-  return (
-    <span className={`text-orange-400 ${className}`} {...props}>
-      {children}
-    </span>
-  );
+  return <span className={`bg-clip-text bg-gradient-to-r text-transparent ${gradient} ${className}`}>{children}</span>;
 }
 
 export function ShimmerText({
