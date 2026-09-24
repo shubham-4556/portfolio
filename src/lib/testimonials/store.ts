@@ -134,11 +134,12 @@ let store: TestimonialStore | null = null;
 
 /**
  * Returns the app-wide store instance. Prefers Postgres when TESTIMONIALS_DSN
- * is set; otherwise falls back to the JSON-file store.
+ * is set; also accepts the standard DATABASE_URL (e.g. pulled by `neon link`).
+ * Falls back to the JSON-file store when neither is configured.
  */
 export function getStore(): TestimonialStore {
   if (!store) {
-    const dsn = process.env.TESTIMONIALS_DSN;
+    const dsn = process.env.TESTIMONIALS_DSN || process.env.DATABASE_URL;
     store = dsn ? new PostgresStore(dsn) : new JsonFileStore();
   }
   return store;

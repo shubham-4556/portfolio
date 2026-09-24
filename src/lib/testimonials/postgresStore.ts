@@ -66,7 +66,16 @@ export class PostgresStore implements TestimonialStore {
     this.pool = new Pool({
       connectionString: dsn,
       max: 5,
+      // Serverless databases (e.g. Neon) suspend when idle; cap every latency
+      // so a waking/suspended backend fails fast instead of hanging requests.
+      connectionTimeoutMillis: 10_000,
+      idleTimeoutMillis: 30_000,
+      query_timeout: 20_000,
       ...(isNeon ? {ssl: {rejectUnauthorized: false}} : {}),
+    });
+    // Drop dead idle clients instead of erroring the process.
+    this.pool.on('error', error => {
+      console.error('[testimonials] idle postgres client error', error.message);
     });
   }
 

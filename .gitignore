@@ -37,3 +37,4 @@ yarn-error.log*
 .vercel
 # runtime store (regenerated from code seed)
 /data/
+.neon
