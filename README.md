@@ -149,11 +149,14 @@ There is intentionally **no admin dashboard** — moderation is done via these p
 | -------- | -------- | ----------- |
 | `TESTIMONIALS_ADMIN_TOKEN` | For moderation | Secret token used to auth approve/reject/delete requests. Kept server-side only — never expose in client code. |
 | `TESTIMONIALS_NOTIFY_URL` | Optional | Webhook URL. On each submission a structured payload (with token-signed approve/reject links) is POSTed here; if unset, the payload is logged to the server console. |
-| `TESTIMONIALS_DSN` | Optional | Reserved for a production database (e.g. Postgres). Not yet used — see storage note below. |
+| `TESTIMONIALS_DSN` | Optional | Postgres connection string. When set, testimonials are stored in a Postgres `testimonials` table (created automatically on first use) via `src/lib/testimonials/postgresStore.ts`. When unset, the JSON-file store is used. |
 
 ### Storage note
 
-The default store (`src/lib/testimonials/store.ts`) persists to `data/testimonials.json`, which is gitignored and **starts empty** — no fake testimonials are shipped. Everything sits behind the `TestimonialStore` interface, so a Postgres adapter can be dropped in when you're ready to switch from the file store. Keep in mind that Vercel's serverless filesystem is ephemeral, so the file store is best for development; use a durable store for production data.
+Backend storage sits behind the `TestimonialStore` interface (`src/lib/testimonials/store.ts`) with two implementations:
+
+- **Postgres** (`postgresStore.ts`) — recommended for production (e.g. Neon, Supabase, or Vercel Postgres). Enable it by setting `TESTIMONIALS_DSN`; the table and index are created automatically on first request, so no migrations are needed for the basic schema. Your submission data survives redeploys and cold starts.
+- **JSON file** (default) — persists to `data/testimonials.json`, which is gitignored and **starts empty** (no fake testimonials are shipped). On Vercel, writes go to the ephemeral `/tmp` directory and therefore **reset between instance rotations** — fine for the form not to error, but not for keeping records. Use Postgres on production.
 
 ## Deployment
 

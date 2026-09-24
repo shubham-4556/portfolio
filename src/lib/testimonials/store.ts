@@ -3,6 +3,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 
+import {PostgresStore} from './postgresStore';
 import {PublicTestimonial, TestimonialInput, TestimonialRecord, TestimonialStatus, toPublic} from './types';
 
 /**
@@ -131,16 +132,14 @@ class JsonFileStore implements TestimonialStore {
 
 let store: TestimonialStore | null = null;
 
-/** Returns the app-wide store instance. Uses JSON-file storage. */
+/**
+ * Returns the app-wide store instance. Prefers Postgres when TESTIMONIALS_DSN
+ * is set; otherwise falls back to the JSON-file store.
+ */
 export function getStore(): TestimonialStore {
   if (!store) {
-    store = new JsonFileStore();
-    if (process.env.TESTIMONIALS_DSN) {
-      console.warn(
-        '[testimonials] TESTIMONIALS_DSN is set but the PostgreSQL adapter is not bundled yet; ' +
-          'using the JSON-file store. See README to wire a Postgres adapter.',
-      );
-    }
+    const dsn = process.env.TESTIMONIALS_DSN;
+    store = dsn ? new PostgresStore(dsn) : new JsonFileStore();
   }
   return store;
 }
