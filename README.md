@@ -165,6 +165,22 @@ The project is a standard Next.js app and can be deployed to [Vercel](https://ve
 1. Push the repository to GitHub.
 2. Import the project in Vercel and deploy (framework preset: Next.js).
 
+### Neon PostgreSQL (production)
+
+Testimonials persist to a Neon Postgres database. The `TestimonialStore` picks Postgres automatically whenever `TESTIMONIALS_DSN` is set.
+
+Setup:
+
+1. Create a project at [neon.tech](https://neon.tech) and grab a **connection string** — the pooler URL (e.g. `<project>.<region>.pooler.aws.neon.tech`) is recommended for serverless. TLS is enabled automatically for `*.neon.tech` hosts by `postgresStore.ts`, so either `postgres://` or `?sslmode=require` URLs work.
+2. Set the env vars:
+   - **Vercel**: Project Settings → Environment Variables → add `TESTIMONIALS_DSN` (and `TESTIMONIALS_ADMIN_TOKEN`).
+   - **Local**: copy `.env.example` to `.env.local` and fill in the same values.
+
+   Both environments share the same `TESTIMONIALS_DSN`, so submissions land in the same database.
+3. Deploy. The `testimonials` table and status index are created automatically on the first API call — no migrations required.
+
+> No `TESTIMONIALS_DSN`? Locally the JSON-file store is used (`data/testimonials.json`).
+
 The existing git history is on the `main` branch.
 
 ## License

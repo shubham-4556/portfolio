@@ -60,7 +60,14 @@ export class PostgresStore implements TestimonialStore {
   private schemaReady: Promise<void> | null = null;
 
   constructor(dsn: string) {
-    this.pool = new Pool({connectionString: dsn, max: 5});
+    // Neon requires TLS. If the DSN already carries an sslmode=..., respect it;
+    // otherwise enable SSL automatically for *.neon.tech hosts.
+    const isNeon = /neon\.tech/i.test(dsn) && !/sslmode=/.test(dsn);
+    this.pool = new Pool({
+      connectionString: dsn,
+      max: 5,
+      ...(isNeon ? {ssl: {rejectUnauthorized: false}} : {}),
+    });
   }
 
   async listPublic(): Promise<PublicTestimonial[]> {
