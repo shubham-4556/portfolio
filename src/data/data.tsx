@@ -4,7 +4,7 @@ import GithubIcon from '../components/Icon/GithubIcon';
 import InstagramIcon from '../components/Icon/InstagramIcon';
 import LinkedInIcon from '../components/Icon/LinkedInIcon';
 import heroImage from '../images/header-background.webp';
-import porfolioImage1 from '../images/portfolio/portfolio-1.jpg';
+import aiCustomerSupportImage from '../images/portfolio/ai-customer-support.jpg';
 import profilepic from '../images/profilepic.jpg';
 import testimonialImage from '../images/testimonial.webp';
 import {
@@ -138,8 +138,9 @@ export const portfolioItems: PortfolioItem[] = [
     title: 'AI Customer Support Agent with MCP',
     description:
       'Built an AI-powered customer support platform using Next.js, React, TypeScript, Node.js, Express, PostgreSQL, and JWT authentication. Integrated an LLM-powered agent with MCP tools to retrieve customer and order information and automate support-ticket workflows through natural-language interactions.',
-    url: '',
-    image: porfolioImage1,
+    url: 'https://ai-customer-support-mcp.vercel.app',
+    image: aiCustomerSupportImage,
+    tags: ['Next.js', 'TypeScript', 'Node.js', 'PostgreSQL', 'AI Agents', 'MCP'],
   },
 ];
 

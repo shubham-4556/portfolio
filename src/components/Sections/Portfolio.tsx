@@ -1,33 +1,33 @@
-import {ArrowTopRightOnSquareIcon} from '@heroicons/react/24/outline';
-import classNames from 'classnames';
+import {ArrowUpRightIcon} from '@heroicons/react/24/outline';
+import {motion, useMotionValue, useReducedMotion, useSpring, useTransform} from 'framer-motion';
 import Image from 'next/image';
-import {FC, memo, MouseEvent, useCallback, useEffect, useRef, useState} from 'react';
+import {FC, memo, MouseEvent, useMemo, useRef} from 'react';
 
 import {portfolioItems, SectionId} from '../../data/data';
 import {PortfolioItem} from '../../data/dataDef';
-import useDetectOutsideClick from '../../hooks/useDetectOutsideClick';
+import GithubIcon from '../Icon/GithubIcon';
 import Section from '../Layout/Section';
+import {GradientText} from '../ui/AnimatedText';
+import {MagneticButton} from '../ui/MagneticButton';
+
+const easing = [0.175, 0.885, 0.32, 1.275] as const;
 
 const Portfolio: FC = memo(() => {
+  const isSpotlight = portfolioItems.length === 1;
+
   return (
-    <Section className="bg-neutral-800" sectionId={SectionId.Portfolio}>
-      <div className="flex flex-col gap-y-8">
-        <h2 className="self-center text-xl font-bold text-white">Check out some of my work</h2>
-        <div className=" w-full columns-1 sm:columns-2 md:columns-3 lg:columns-4">
-          {portfolioItems.map((item, index) => {
-            const {title, image} = item;
-            return (
-              <div className="pb-6" key={`${title}-${index}`}>
-                <div
-                  className={classNames(
-                    'relative h-max w-full overflow-hidden rounded-lg shadow-lg shadow-black/30 lg:shadow-xl',
-                  )}>
-                  <Image alt={title} className="h-full w-full" placeholder="blur" src={image} />
-                  <ItemOverlay item={item} />
-                </div>
-              </div>
-            );
-          })}
+    <Section className="relative overflow-hidden bg-neutral-800" sectionId={SectionId.Portfolio}>
+      {/* Ambient glows */}
+      <div className="pointer-events-none absolute -left-32 top-1/4 h-96 w-96 rounded-full bg-orange-500/10 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-24 -right-32 h-96 w-96 rounded-full bg-cyan-500/10 blur-3xl" />
+
+      <div className="relative z-10 flex flex-col gap-y-14">
+        <SectionHeader />
+
+        <div className={isSpotlight ? 'grid grid-cols-1 gap-8' : 'grid grid-cols-1 gap-8 lg:grid-cols-2'}>
+          {portfolioItems.map((item, index) => (
+            <ProjectCard featured={isSpotlight} item={item} key={`${item.title}-${index}`} />
+          ))}
         </div>
       </div>
     </Section>
@@ -37,49 +37,136 @@ const Portfolio: FC = memo(() => {
 Portfolio.displayName = 'Portfolio';
 export default Portfolio;
 
-const ItemOverlay: FC<{item: PortfolioItem}> = memo(({item: {url, title, description}}) => {
-  const [mobile, setMobile] = useState(false);
-  const [showOverlay, setShowOverlay] = useState(false);
-  const linkRef = useRef<HTMLAnchorElement>(null);
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || !window.matchMedia) return;
-    const coarsePointer = window.matchMedia('(pointer: coarse)');
-    const update = () => setMobile(coarsePointer.matches);
-    update();
-    coarsePointer.addEventListener('change', update);
-    return () => coarsePointer.removeEventListener('change', update);
-  }, []);
-  useDetectOutsideClick(linkRef, () => setShowOverlay(false));
-
-  const handleItemClick = useCallback(
-    (event: MouseEvent<HTMLElement>) => {
-      if (mobile && !showOverlay) {
-        event.preventDefault();
-        setShowOverlay(!showOverlay);
-      }
-    },
-    [mobile, showOverlay],
-  );
-
+const SectionHeader: FC = memo(() => {
   return (
-    <a
-      className={classNames(
-        'absolute inset-0 h-full w-full  bg-gray-900 transition-all duration-300',
-        {'opacity-0 hover:opacity-80': !mobile},
-        showOverlay ? 'opacity-80' : 'opacity-0',
-      )}
-      href={url}
-      onClick={handleItemClick}
-      ref={linkRef}
-      target="_blank">
-      <div className="relative h-full w-full p-4">
-        <div className="flex h-full w-full flex-col gap-y-2 overflow-y-auto overscroll-contain">
-          <h2 className="text-center font-bold text-white opacity-100">{title}</h2>
-          <p className="text-xs text-white opacity-100 sm:text-sm">{description}</p>
-        </div>
-        <ArrowTopRightOnSquareIcon className="absolute bottom-1 right-1 h-4 w-4 shrink-0 text-white sm:bottom-2 sm:right-2" />
-      </div>
-    </a>
+    <motion.div
+      className="flex flex-col items-center gap-y-4 text-center"
+      initial={{opacity: 0, y: 30}}
+      transition={{duration: 0.7, ease: easing}}
+      viewport={{once: true, margin: '-80px'}}
+      whileInView={{opacity: 1, y: 0}}>
+      <span className="font-mono text-xs font-bold uppercase tracking-[0.35em] text-orange-500">
+        // 01. Selected Work
+      </span>
+      <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl md:text-5xl">
+        <GradientText gradient="from-orange-400 via-orange-500 to-cyan-400">Featured Projects</GradientText>
+      </h2>
+      <p className="max-w-2xl text-sm text-gray-300 sm:text-base">
+        A selection of production-ready applications I have designed and built as a full stack developer.
+      </p>
+    </motion.div>
   );
 });
+SectionHeader.displayName = 'SectionHeader';
+
+const ProjectCard: FC<{item: PortfolioItem; featured: boolean}> = memo(({item, featured}) => {
+  const {title, description, url, image, tags, githubUrl} = item;
+  const cardRef = useRef<HTMLDivElement>(null);
+  const shouldReduceMotion = useReducedMotion();
+
+  const mx = useMotionValue(0);
+  const my = useMotionValue(0);
+  const springConfig = {stiffness: 160, damping: 14, mass: 0.4};
+  const springX = useSpring(mx, springConfig);
+  const springY = useSpring(my, springConfig);
+  const rotateY = useTransform(springX, [-0.5, 0.5], [-6, 6]);
+  const rotateX = useTransform(springY, [-0.5, 0.5], [6, -6]);
+
+  const liveIcon = useMemo(() => <ArrowUpRightIcon className="h-4 w-4" />, []);
+  const githubIcon = useMemo(() => <GithubIcon className="h-4 w-4" />, []);
+
+  const handleMouseMove = (event: MouseEvent<HTMLDivElement>) => {
+    if (shouldReduceMotion) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    mx.set((event.clientX - rect.left) / rect.width - 0.5);
+    my.set((event.clientY - rect.top) / rect.height - 0.5);
+  };
+
+  const handleMouseLeave = () => {
+    mx.set(0);
+    my.set(0);
+  };
+
+  return (
+    <motion.div
+      className={`group relative overflow-hidden rounded-3xl border border-white/10 bg-neutral-900/60 shadow-xl shadow-black/30 backdrop-blur-sm transition-colors duration-300 hover:border-orange-500/40 ${
+        featured ? 'md:col-span-2' : ''
+      }`}
+      initial={{opacity: 0, y: 40}}
+      ref={cardRef}
+      style={{rotateX, rotateY, transformStyle: 'preserve-3d'}}
+      transition={{duration: 0.7, ease: easing}}
+      viewport={{once: true, margin: '-80px'}}
+      whileInView={{opacity: 1, y: 0}}>
+      <div
+        className="flex h-full flex-col gap-6 p-6 sm:p-8"
+        onMouseLeave={handleMouseLeave}
+        onMouseMove={handleMouseMove}>
+        <div className={`relative aspect-[16/10] overflow-hidden rounded-2xl ${featured ? 'lg:aspect-[16/9]' : ''}`}>
+          <motion.div className="h-full w-full" whileHover={shouldReduceMotion ? undefined : {scale: 1.04}}>
+            <Image alt={title} className="h-full w-full object-cover" placeholder="blur" src={image} />
+          </motion.div>
+          <div className="absolute inset-0 bg-gradient-to-t from-neutral-900/60 via-transparent to-transparent" />
+          <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-black/40 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-white backdrop-blur">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400 opacity-75" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-cyan-400" />
+            </span>
+            Live
+          </div>
+        </div>
+
+        <div className="flex flex-1 flex-col justify-center gap-4">
+          <h3
+            className={`font-extrabold tracking-tight text-white ${
+              featured ? 'text-2xl sm:text-3xl' : 'text-xl sm:text-2xl'
+            }`}>
+            {title}
+          </h3>
+
+          {tags && tags.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {tags.map(tag => (
+                <span
+                  className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-gray-300 transition-colors duration-300 hover:border-orange-500/50 hover:text-orange-400"
+                  key={tag}>
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+
+          <p className="text-sm leading-relaxed text-gray-300">{description}</p>
+
+          <div className="mt-2 flex flex-wrap gap-3">
+            <MagneticButton
+              href={url}
+              icon={liveIcon}
+              iconPosition="right"
+              rel="noopener noreferrer"
+              size="md"
+              strength={20}
+              target="_blank"
+              variant="primary">
+              Live Demo
+            </MagneticButton>
+            {githubUrl && (
+              <MagneticButton
+                href={githubUrl}
+                icon={githubIcon}
+                iconPosition="right"
+                rel="noopener noreferrer"
+                size="md"
+                strength={20}
+                target="_blank"
+                variant="outline">
+                Source Code
+              </MagneticButton>
+            )}
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+});
+ProjectCard.displayName = 'ProjectCard';

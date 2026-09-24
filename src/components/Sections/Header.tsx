@@ -9,6 +9,10 @@ import {useNavObserver} from '../../hooks/useNavObserver';
 
 export const headerID = 'headerNav';
 
+const navLabels: Record<string, string> = {
+  [SectionId.Portfolio]: 'Project',
+};
+
 const Header: FC = memo(() => {
   const [currentSection, setCurrentSection] = useState<SectionId | null>(null);
   const navSections = useMemo(
@@ -130,7 +134,7 @@ const NavItem: FC<{
       href={`/#${section}`}
       key={section}
       onClick={onClick}>
-      {section}
+      {navLabels[section] ?? section}
     </Link>
   );
 });

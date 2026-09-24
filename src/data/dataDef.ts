@@ -79,6 +79,10 @@ export interface PortfolioItem {
   description: string;
   url: string;
   image: string | StaticImageData;
+  /** Optional tags displayed as chips on the project card */
+  tags?: string[];
+  /** Optional repository link alongside the live url */
+  githubUrl?: string;
 }
 
 /**
