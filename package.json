@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "npm run compile && next build",
+    "build": "yarn compile && next build",
     "clean": "rm -rf build-tsc .next",
     "compile": "tsc --build --verbose",
-    "dev": "npm run compile && next dev",
+    "dev": "yarn compile && next dev",
     "lint": "prettier --write './src/**/*.{js,jsx,json,ts,tsx}' && eslint './src/**/*.{js,jsx,ts,tsx}' --fix --max-warnings=0",
     "start": "next start",
     "sitemap": "next-sitemap"
