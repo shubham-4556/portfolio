@@ -125,13 +125,14 @@ The testimonial section is backed by a small JSON API. Public consumers only see
 
 ### Endpoints
 
-| Method | Route | Auth | Description |
-| ------ | ----- | ---- | ----------- |
-| `GET` | `/api/testimonials` | — | Returns `{ testimonials }` of approved records only. |
-| `POST` | `/api/testimonials` | — | Validates and creates a `pending` record. Rate-limited to 3/15 min per IP (in-memory). Returns `201` with `"Your testimonial has been submitted successfully and will be reviewed before being published."` |
-| `PATCH` | `/api/testimonials/:id/approve` | Admin token **or signed link** | Approves a pending record (publishes it). A `GET` with the signed `?sig=` link also works (for email links). |
-| `PATCH` | `/api/testimonials/:id/reject` | Admin token **or signed link** | Rejects a pending record (kept hidden). A `GET` with the signed `?sig=` link also works (for email links). |
-| `DELETE` | `/api/testimonials/:id` | Admin token | Removes any record. |
+| Method   | Route                           | Auth                           | Description                                                                                                                                                                                                                                                                                                                               |
+| -------- | ------------------------------- | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`    | `/api/testimonials`             | —                              | Returns `{ testimonials }` of approved records only.                                                                                                                                                                                                                                                                                      |
+| `POST`   | `/api/testimonials`             | —                              | Validates and creates a `pending` record. Rate-limited to 3/15 min per IP (in-memory). Returns `201` with the submission message.                                                                                                                                                                                                         |
+| `POST`   | `/api/testimonials/upload`      | —                              | Reserves a photo: validates type/size (≤5 MB, JPG/PNG/WEBP), rate-limited to 10/15 min per IP, and returns a short-lived presigned `uploadUrl` + the `publicUrl`. The browser PUTs the raw file straight to Neon Object Storage (never base64, never through the server) and submits the `publicUrl` as the testimonial's `profileImage`. |
+| `PATCH`  | `/api/testimonials/:id/approve` | Admin token **or signed link** | Approves a pending record (publishes it). A `GET` with the signed `?sig=` link also works (for email links).                                                                                                                                                                                                                              |
+| `PATCH`  | `/api/testimonials/:id/reject`  | Admin token **or signed link** | Rejects a pending record (kept hidden). A `GET` with the signed `?sig=` link also works (for email links).                                                                                                                                                                                                                                |
+| `DELETE` | `/api/testimonials/:id`         | Admin token                    | Removes any record.                                                                                                                                                                                                                                                                                                                       |
 
 ### Moderation
 
@@ -147,14 +148,17 @@ There is intentionally **no admin dashboard** — moderation is done via these p
 
 ### Environment variables
 
-| Variable | Required | Description |
-| -------- | -------- | ----------- |
-| `TESTIMONIALS_ADMIN_TOKEN` | For moderation | Secret token that authorizes approve/reject/delete and is the HMAC key for signed moderation links. Kept server-side only — never expose in client code. |
-| `RESEND_API_KEY` | For email | Resend API key (`re_…`) used to send the new-submission notification email. |
-| `TESTIMONIALS_OWNER_EMAIL` | For email | The address that receives the pending-testimonial email (you). |
-| `TESTIMONIALS_EMAIL_FROM` | Optional | Sender shown on the notification email. Must be on a domain you verified in Resend. Defaults to `Testimonials <onboarding@resend.dev>` (only sends to your own account until a domain is verified). |
-| `TESTIMONIALS_NOTIFY_URL` | Optional | Webhook URL. On each submission a structured payload (with signed approve/reject links) is POSTed here; if unset, the payload is logged to the server console. |
-| `TESTIMONIALS_DSN` | Optional | Postgres connection string. When set, testimonials are stored in a Postgres `testimonials` table (created automatically on first use) via `src/lib/testimonials/postgresStore.ts`. `DATABASE_URL` (from `neon link`) is accepted here as a fallback. When neither is set, the JSON-file store is used. |
+| Variable                                      | Required       | Description                                                                                                                                                                                                                                                                                            |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `TESTIMONIALS_ADMIN_TOKEN`                    | For moderation | Secret token that authorizes approve/reject/delete and is the HMAC key for signed moderation links. Kept server-side only — never expose in client code.                                                                                                                                               |
+| `RESEND_API_KEY`                              | For email      | Resend API key (`re_…`) used to send the new-submission notification email.                                                                                                                                                                                                                            |
+| `TESTIMONIALS_OWNER_EMAIL`                    | For email      | The address that receives the pending-testimonial email (you).                                                                                                                                                                                                                                         |
+| `TESTIMONIALS_EMAIL_FROM`                     | Optional       | Sender shown on the notification email. Must be on a domain you verified in Resend. Defaults to `Testimonials <onboarding@resend.dev>` (only sends to your own account until a domain is verified).                                                                                                    |
+| `TESTIMONIALS_NOTIFY_URL`                     | Optional       | Webhook URL. On each submission a structured payload (with signed approve/reject links) is POSTed here; if unset, the payload is logged to the server console.                                                                                                                                         |
+| `TESTIMONIALS_DSN`                            | Optional       | Postgres connection string. When set, testimonials are stored in a Postgres `testimonials` table (created automatically on first use) via `src/lib/testimonials/postgresStore.ts`. `DATABASE_URL` (from `neon link`) is accepted here as a fallback. When neither is set, the JSON-file store is used. |
+| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | Photo uploads  | Branch-scoped storage credentials used to sign presigned PUT uploads to Neon Object Storage. Pulled into `.env.local` by `neon deploy`; add the same in Vercel.                                                                                                                                        |
+| `AWS_ENDPOINT_URL_S3`                         | Photo uploads  | Object storage endpoint for the branch (e.g. `https://br-<branch>.storage.<region>.aws.neon.tech`).                                                                                                                                                                                                    |
+| `AWS_REGION`                                  | Photo uploads  | Neon project region (e.g. `ap-southeast-1`), used when signing uploads.                                                                                                                                                                                                                                |
 
 ### Email notifications (Resend)
 
@@ -163,8 +167,8 @@ Each submission is stored as `pending` in Postgres, and Resend emails the owner 
 **To enable on Vercel:**
 
 1. Go to [resend.com](https://resend.com) → sign in (free tier covers low-volume personal sites).
-2. **Verify a sending domain** (recommended): Resend → **Domains** → *Add Domain* (e.g. `yourdomain.com`) → follow the DNS records (TXT/SPF/DKIM) in your DNS provider → wait for *Verified*. Without this you can only test sending to your own address from `onboarding@resend.dev`.
-3. **Create an API key**: Resend → **API Keys** → *Create API Key* → copy the `re_…` key.
+2. **Verify a sending domain** (recommended): Resend → **Domains** → _Add Domain_ (e.g. `yourdomain.com`) → follow the DNS records (TXT/SPF/DKIM) in your DNS provider → wait for _Verified_. Without this you can only test sending to your own address from `onboarding@resend.dev`.
+3. **Create an API key**: Resend → **API Keys** → _Create API Key_ → copy the `re_…` key.
 4. In **Vercel → Project → Settings → Environment Variables** add:
    - `RESEND_API_KEY` — the `re_…` key from step 3
    - `TESTIMONIALS_OWNER_EMAIL` — your inbox, e.g. `you@yourdomain.com`
@@ -172,6 +176,10 @@ Each submission is stored as `pending` in Postgres, and Resend emails the owner 
 5. Redeploy. On the next submission you'll receive the email with Approve/Reject links.
 
 **Locally:** copy `.env.example` → `.env.local` and set the same three variables. If they're unset, submissions are stored but no email is sent (logged to the server console instead) — the API still works.
+
+### Profile photos (Neon Object Storage)
+
+The testimonial form lets submitters pick a JPG/PNG/WEBP photo (≤5 MB) with a live preview. Bytes are uploaded **directly from the browser** via a presigned PUT to a `public_read` bucket (`testimonial-photos`) that branches with the Neon project — only the public URL is stored in Postgres; approved testimonials render the photo in `TestimonialCard`. No `AWS_*` values are needed to write code — `neon deploy` injects them into `.env.local`. To serve photos in production, copy the same four `AWS_*` values (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_ENDPOINT_URL_S3`, `AWS_REGION`) into Vercel.
 
 ### Storage note
 
@@ -199,6 +207,7 @@ Setup:
    - **Local**: copy `.env.example` to `.env.local` and fill in the same values.
 
    Both environments share the same `TESTIMONIALS_DSN`, so submissions land in the same database.
+
 3. Deploy. The `testimonials` table and status index are created automatically on the first API call — no migrations required.
 
 > No `TESTIMONIALS_DSN`? Locally the JSON-file store is used (`data/testimonials.json`).

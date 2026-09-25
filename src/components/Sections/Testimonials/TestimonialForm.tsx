@@ -1,8 +1,9 @@
 import {CheckIcon, ExclamationTriangleIcon, StarIcon as StarIconOutline} from '@heroicons/react/24/outline';
 import {StarIcon as StarIconSolid} from '@heroicons/react/24/solid';
-import {FC, memo, useCallback, useState} from 'react';
+import {FC, memo, useCallback, useEffect, useState} from 'react';
 
 import {validateTestimonial} from '../../../lib/testimonials/validation';
+import PhotoUploadArea, {ACCEPTED_PHOTO_TYPES, MAX_PHOTO_BYTES} from './PhotoUpload';
 
 interface TestimonialFormProps {
   onClose: () => void;
@@ -14,7 +15,6 @@ interface FormValues {
   role: string;
   company: string;
   linkedinUrl: string;
-  profileImage: string;
   rating: number;
   website: string;
   testimonial: string;
@@ -26,9 +26,16 @@ interface FormErrors {
   role?: string;
   company?: string;
   linkedinUrl?: string;
-  profileImage?: string;
   rating?: string;
   testimonial?: string;
+  photo?: string;
+}
+
+interface UploadResponse {
+  success?: boolean;
+  uploadUrl?: string;
+  publicUrl?: string;
+  error?: string;
 }
 
 const emptyValues: FormValues = {
@@ -37,7 +44,6 @@ const emptyValues: FormValues = {
   role: '',
   company: '',
   linkedinUrl: '',
-  profileImage: '',
   rating: 0,
   website: '',
   testimonial: '',
@@ -52,6 +58,16 @@ const inputClass = (hasError: boolean): string =>
 
 const labelClass = 'mb-1.5 block text-xs font-semibold uppercase tracking-wider text-neutral-400';
 
+function photoMimeType(file: File): string {
+  if (ACCEPTED_PHOTO_TYPES.includes(file.type.toLowerCase() as (typeof ACCEPTED_PHOTO_TYPES)[number])) {
+    return file.type.toLowerCase();
+  }
+  if (/\.jpe?g$/i.test(file.name)) return 'image/jpeg';
+  if (/\.png$/i.test(file.name)) return 'image/png';
+  if (/\.webp$/i.test(file.name)) return 'image/webp';
+  return file.type;
+}
+
 const TestimonialForm: FC<TestimonialFormProps> = memo(({onClose}) => {
   const [values, setValues] = useState<FormValues>(emptyValues);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -60,11 +76,75 @@ const TestimonialForm: FC<TestimonialFormProps> = memo(({onClose}) => {
   const [serverMessage, setServerMessage] = useState<string | null>(null);
   const [hoverRating, setHoverRating] = useState(0);
 
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (photoPreview) URL.revokeObjectURL(photoPreview);
+    };
+  }, [photoPreview]);
+
   const setField = useCallback((field: keyof FormValues, value: string) => {
     setValues(prev => ({...prev, [field]: value}));
     setErrors(prev => ({...prev, [field]: undefined}));
     setServerMessage(null);
   }, []);
+
+  const handlePhotoSelect = useCallback(
+    (file: File) => {
+      setPhotoError(null);
+      setServerMessage(null);
+      const accepted =
+        ACCEPTED_PHOTO_TYPES.includes(file.type.toLowerCase() as (typeof ACCEPTED_PHOTO_TYPES)[number]) ||
+        /\.(jpe?g|png|webp)$/i.test(file.name);
+      if (!accepted) {
+        setPhotoError('Only JPG, PNG, or WEBP images are supported.');
+        return;
+      }
+      if (file.size > MAX_PHOTO_BYTES) {
+        setPhotoError('Photo must be no larger than 5 MB.');
+        return;
+      }
+      setPhoto(file);
+      if (photoPreview) URL.revokeObjectURL(photoPreview);
+      setPhotoPreview(URL.createObjectURL(file));
+    },
+    [photoPreview],
+  );
+
+  const handlePhotoRemove = useCallback(() => {
+    setPhoto(null);
+    setPhotoPreview(null);
+    setPhotoError(null);
+  }, []);
+
+  const uploadPhoto = useCallback(
+    async (file: File): Promise<{publicUrl: string; fileName: string} | {error: string}> => {
+      const mimeType = photoMimeType(file);
+      const reservation = await fetch('/api/testimonials/upload', {
+        method: 'POST',
+        headers: {'content-type': 'application/json'},
+        body: JSON.stringify({name: file.name, mimeType, size: file.size}),
+      });
+      const payload = (await reservation.json().catch(() => ({}))) as UploadResponse;
+      if (!reservation.ok || !payload.uploadUrl || !payload.publicUrl) {
+        return {error: payload.error ?? 'Could not prepare the photo upload. Please try again.'};
+      }
+
+      const putResponse = await fetch(payload.uploadUrl, {
+        method: 'PUT',
+        headers: {'content-type': mimeType},
+        body: new Blob([file], {type: mimeType}),
+      });
+      if (!putResponse.ok) {
+        return {error: 'Photo upload failed. Please try again or choose a different photo.'};
+      }
+      return {publicUrl: payload.publicUrl, fileName: file.name};
+    },
+    [],
+  );
 
   const handleSubmit = useCallback(
     async (event: React.FormEvent<HTMLFormElement>) => {
@@ -76,6 +156,11 @@ const TestimonialForm: FC<TestimonialFormProps> = memo(({onClose}) => {
         return;
       }
 
+      if (photoError) {
+        setErrors(prev => ({...prev, photo: photoError}));
+        return;
+      }
+
       const result = validateTestimonial(values);
       if (!result.ok || !result.value) {
         setErrors((result.errors ?? {}) as FormErrors);
@@ -84,14 +169,37 @@ const TestimonialForm: FC<TestimonialFormProps> = memo(({onClose}) => {
 
       setSubmitting(true);
       try {
+        let profileImage: string | undefined;
+        if (photo) {
+          const upload = await uploadPhoto(photo);
+          if ('error' in upload) {
+            setServerMessage(upload.error);
+            return;
+          }
+          profileImage = upload.publicUrl;
+        }
+
         const response = await fetch('/api/testimonials', {
           method: 'POST',
           headers: {'content-type': 'application/json'},
-          body: JSON.stringify(result.value),
+          body: JSON.stringify({
+            ...result.value,
+            ...(profileImage ? {profileImage} : {}),
+          }),
         });
-        const payload = (await response.json()) as {success: boolean; errors?: FormErrors; message?: string};
+        const payload = (await response.json()) as {
+          success: boolean;
+          errors?: Record<string, string>;
+          message?: string;
+        };
         if (!response.ok) {
-          if (payload.errors) setErrors(payload.errors);
+          if (payload.errors) {
+            const photoErrorFromServer = payload.errors.profileImage;
+            if (photoErrorFromServer) setPhotoError(photoErrorFromServer);
+            const visibleErrors = {...payload.errors};
+            delete visibleErrors.profileImage;
+            setErrors(visibleErrors as FormErrors);
+          }
           setServerMessage(
             payload.message ??
               (response.status === 429
@@ -107,7 +215,7 @@ const TestimonialForm: FC<TestimonialFormProps> = memo(({onClose}) => {
         setSubmitting(false);
       }
     },
-    [values],
+    [photo, photoError, uploadPhoto, values],
   );
 
   if (success) {
@@ -183,30 +291,28 @@ const TestimonialForm: FC<TestimonialFormProps> = memo(({onClose}) => {
         </Field>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field error={errors.linkedinUrl} label="LinkedIn URL">
-          <input
-            aria-invalid={Boolean(errors.linkedinUrl)}
-            className={inputClass(Boolean(errors.linkedinUrl))}
-            maxLength={2048}
-            onChange={event => setField('linkedinUrl', event.target.value)}
-            placeholder="https://www.linkedin.com/in/janedoe"
-            type="url"
-            value={values.linkedinUrl}
-          />
-        </Field>
-        <Field error={errors.profileImage} label="Profile image URL">
-          <input
-            aria-invalid={Boolean(errors.profileImage)}
-            className={inputClass(Boolean(errors.profileImage))}
-            maxLength={2048}
-            onChange={event => setField('profileImage', event.target.value)}
-            placeholder="https://example.com/avatar.jpg"
-            type="url"
-            value={values.profileImage}
-          />
-        </Field>
-      </div>
+      <Field error={errors.linkedinUrl} label="LinkedIn URL">
+        <input
+          aria-invalid={Boolean(errors.linkedinUrl)}
+          className={inputClass(Boolean(errors.linkedinUrl))}
+          maxLength={2048}
+          onChange={event => setField('linkedinUrl', event.target.value)}
+          placeholder="https://www.linkedin.com/in/janedoe"
+          type="url"
+          value={values.linkedinUrl}
+        />
+      </Field>
+
+      <Field error={photoError ?? errors.photo} label="Profile photo">
+        <PhotoUploadArea
+          error={photoError ?? errors.photo}
+          file={photo}
+          onRemove={handlePhotoRemove}
+          onSelect={handlePhotoSelect}
+          previewUrl={photoPreview}
+          uploading={submitting}
+        />
+      </Field>
 
       <Field error={errors.rating} label="Rating">
         <div className="flex items-center gap-1">
