@@ -123,6 +123,18 @@ All content lives in `src/data/data.tsx`:
 
 The testimonial section is backed by a small JSON API. Public consumers only see **approved** records; submitter emails are never exposed and are used solely for moderation.
 
+## Contact form
+
+The "Get In Touch" section posts to `POST /api/contact`. The server validates every field (never trusting the client), rate-limits to 5 messages/15 min per IP (in-memory), ignores honeypot-filled submissions (returning success so bots don't learn), and emails the owner a sanitized HTML message with the visitor's address set as **Reply-To** so you can reply directly.
+
+| Variable              | Required  | Description                                                                                                                                     |
+| --------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `RESEND_API_KEY`      | For email | Shared with testimonials — the API key used to send contact emails.                                                                             |
+| `CONTACT_OWNER_EMAIL` | For email | The address that receives contact-form messages. Falls back to `TESTIMONIALS_OWNER_EMAIL` when unset.                                           |
+| `CONTACT_EMAIL_FROM`  | Optional  | Sender shown on contact emails. Falls back to `TESTIMONIALS_EMAIL_FROM` when unset. Must be on a domain verified in Resend for general sending. |
+
+No storage is used for contact messages (nothing is persisted), and credentials never reach the browser.
+
 ### Endpoints
 
 | Method   | Route                           | Auth                           | Description                                                                                                                                                                                                                                                                                                                               |
