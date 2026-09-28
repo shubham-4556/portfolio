@@ -147,7 +147,7 @@ const MagneticButtonInner = function MagneticButtonInner(
     onMouseLeaveCapture: handleMouseLeaveButton,
     onClick,
     className: classNameString,
-    whileTap: {scale: 0.98},
+    whileTap: {scale: 0.97},
   };
 
   const buttonContent = (
