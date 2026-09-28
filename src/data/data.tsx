@@ -3,7 +3,6 @@ import {AcademicCapIcon, ArrowDownTrayIcon, MapIcon} from '@heroicons/react/24/o
 import GithubIcon from '../components/Icon/GithubIcon';
 import InstagramIcon from '../components/Icon/InstagramIcon';
 import LinkedInIcon from '../components/Icon/LinkedInIcon';
-import heroImage from '../images/header-background.webp';
 import aiCustomerSupportImage from '../images/portfolio/ai-customer-support.jpg';
 import profilepic from '../images/profilepic.jpg';
 import testimonialImage from '../images/testimonial.webp';
@@ -46,32 +45,25 @@ export type SectionId = (typeof SectionId)[keyof typeof SectionId];
  * Hero section
  */
 export const heroData: Hero = {
-  imageSrc: heroImage,
-  name: `I'm Shubham Deo`,
+  imageSrc: profilepic,
+  name: 'Shubham Deo',
   description: (
-    <>
-      <p className="prose-sm text-stone-200 sm:prose-base lg:prose-lg">
-        I'm an India Based <strong className="text-stone-100">Full Stack Web Developer</strong>
-      </p>
-
-      <p className="prose-sm text-stone-200 sm:prose-base lg:prose-lg">
-        I build responsive, scalable, and user-friendly web applications using modern technologies such as TypeScript,
-        React.js, Next.js, Node.js, Express.js, PostgreSQL, and Tailwind CSS.
-      </p>
-    </>
+    <p>
+      I build scalable, responsive and user-focused web applications using modern frontend, backend and AI technologies.
+    </p>
   ),
   actions: [
     {
-      href: '/Shubham-Kumar-Deo-Resume.pdf',
-      text: 'Resume',
+      href: `#${SectionId.Portfolio}`,
+      text: 'View My Work',
       primary: true,
-      download: 'Shubham Kumar Deo - Resume.pdf',
-      Icon: ArrowDownTrayIcon,
     },
     {
-      href: `#${SectionId.Contact}`,
-      text: 'Contact',
+      href: '/Shubham-Kumar-Deo-Resume.pdf',
+      text: 'Download Resume',
       primary: false,
+      download: 'Shubham Kumar Deo - Resume.pdf',
+      Icon: ArrowDownTrayIcon,
     },
   ],
 };
