@@ -62,9 +62,10 @@ export const heroData: Hero = {
   ),
   actions: [
     {
-      href: '/assets/resume.pdf',
+      href: '/Shubham-Kumar-Deo-Resume.pdf',
       text: 'Resume',
       primary: true,
+      download: 'Shubham Kumar Deo - Resume.pdf',
       Icon: ArrowDownTrayIcon,
     },
     {

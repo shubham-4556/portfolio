@@ -31,6 +31,7 @@ interface HeroActionItem {
   href: string;
   text: string;
   primary?: boolean;
+  download?: string;
   Icon?: ForwardRefExoticComponent<Omit<SVGProps<SVGSVGElement>, 'ref'>>;
 }
 

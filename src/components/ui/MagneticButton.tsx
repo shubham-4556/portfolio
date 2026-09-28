@@ -20,6 +20,7 @@ export interface MagneticButtonProps {
   href?: string;
   target?: string;
   rel?: string;
+  download?: string;
 }
 
 const variantStyles = {
@@ -54,6 +55,7 @@ const MagneticButtonInner = function MagneticButtonInner(
     href,
     target,
     rel,
+    download,
   }: MagneticButtonProps,
   ref: React.Ref<HTMLButtonElement>,
 ) {
@@ -178,6 +180,7 @@ const MagneticButtonInner = function MagneticButtonInner(
     return (
       <motion.a
         {...commonProps}
+        download={download}
         href={href}
         rel={rel || (target === '_blank' ? 'noopener noreferrer' : undefined)}
         target={target}>

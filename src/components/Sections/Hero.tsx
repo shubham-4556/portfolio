@@ -118,12 +118,13 @@ const Hero = () => {
             {actions.map((action, _index) => (
               <MagneticButton
                 className="w-full"
+                download={action.download}
                 href={action.href}
                 key={action.text}
-                rel={action.href.startsWith('#') ? undefined : 'noopener noreferrer'}
+                rel={action.download ? undefined : action.href.startsWith('#') ? undefined : 'noopener noreferrer'}
                 size="lg"
                 strength={25}
-                target={action.href.startsWith('#') ? undefined : '_blank'}
+                target={action.download ? undefined : action.href.startsWith('#') ? undefined : '_blank'}
                 variant="primary">
                 {action.text}
                 {action.Icon && <action.Icon className="w-5 h-5" />}
