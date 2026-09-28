@@ -1,168 +1,354 @@
 // @ts-nocheck
 'use client';
 
-import {ChevronDownIcon} from '@heroicons/react/24/outline';
-import {motion, useScroll, useTransform} from 'framer-motion';
+import {ArrowDownTrayIcon, ArrowRightIcon} from '@heroicons/react/24/outline';
+import {
+  motion,
+  MotionConfig,
+  useMotionValue,
+  useReducedMotion,
+  useScroll,
+  useSpring,
+  useTransform,
+} from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
-import {memo} from 'react';
+import {FC, memo, useCallback, useMemo, useRef} from 'react';
 
-import Socials from '@/components/Socials';
-import {GradientText, ShimmerText} from '@/components/ui/AnimatedText';
-import {MagneticButton} from '@/components/ui/MagneticButton';
-import {heroData, SectionId} from '@/data/data';
+import {heroData, SectionId} from '../../data/data';
+import Socials from '../Socials';
+import {MagneticButton} from '../ui/MagneticButton';
 
-// const ThreeBackground = dynamic(() => import('@/components/ui/ThreeBackground'), {
-//   ssr: false,
-//   loading: () => <div className="fixed inset-0 bg-gradient-to-br from-orange-500/20 via-transparent to-cyan-500/20" />,
-// });
+const ROLE = 'Full Stack Developer';
 
-const Hero = () => {
-  const {name, description, actions} = heroData;
-  const {scrollY} = useScroll();
-  const scrollFade = useTransform(scrollY, [0, 120], [1, 0]);
+const FADE_DELAY = {opacity: 0, y: 28};
+const FADE_SHOW = {opacity: 1, y: 0};
+const VELOCITY_STIFFNESS = 80;
+const VELOCITY_DAMPING = 18;
+
+const floatEase = [0.175, 0.885, 0.32, 1.275];
+
+const techCards = [
+  {label: 'React', dot: 'bg-cyan-400', pos: '-left-3 top-8 sm:-left-8 sm:top-10', duration: 6, delay: 0.2},
+  {label: 'Next.js', dot: 'bg-white', pos: '-right-3 top-4 sm:-right-10 sm:top-6', duration: 5, delay: 0.7},
+  {label: 'Node.js', dot: 'bg-green-400', pos: '-left-4 bottom-20 sm:-left-12 sm:bottom-24', duration: 7, delay: 1.1},
+  {
+    label: 'TypeScript',
+    dot: 'bg-blue-400',
+    pos: '-right-4 bottom-14 sm:-right-8 sm:bottom-16',
+    duration: 6.5,
+    delay: 0.5,
+  },
+  {label: 'PostgreSQL', dot: 'bg-sky-400', pos: 'left-10 -top-6 sm:left-8 sm:-top-7', duration: 5.5, delay: 0.9},
+  {label: 'AI/ML', dot: 'bg-fuchsia-400', pos: 'right-10 -bottom-8 sm:-bottom-9', duration: 6, delay: 1.4},
+] as const;
+
+const particles = [
+  {top: '20%', left: '14%', size: 3, duration: 7},
+  {top: '30%', right: '20%', size: 2, duration: 9},
+  {bottom: '26%', left: '22%', size: 2, duration: 8},
+  {top: '64%', left: '9%', size: 3, duration: 10},
+  {bottom: '34%', right: '12%', size: 2, duration: 6.5},
+] as const;
+
+const Hero: FC = memo(() => {
+  const reduceMotion = useReducedMotion();
+  const sectionRef = useRef<HTMLElement>(null);
+
+  const {scrollYProgress} = useScroll({
+    target: sectionRef,
+    offset: ['start start', 'end start'],
+  });
+  const contentOpacity = useTransform(scrollYProgress, [0, 0.7], [1, 0]);
+  const contentScale = useTransform(scrollYProgress, [0, 0.7], [1, 0.96]);
+  const indicatorOpacity = useTransform(scrollYProgress, [0.2, 0.5], [1, 0]);
+
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const springX = useSpring(mouseX, {stiffness: VELOCITY_STIFFNESS, damping: VELOCITY_DAMPING});
+  const springY = useSpring(mouseY, {stiffness: VELOCITY_STIFFNESS, damping: VELOCITY_DAMPING});
+
+  const profileX = useTransform(springX, value => value * 14);
+  const profileY = useTransform(springY, value => value * 14);
+  const cardsX = useTransform(springX, value => value * -22);
+  const cardsY = useTransform(springY, value => value * -22);
+  const glowX = useTransform(springX, value => value * -30);
+  const glowY = useTransform(springY, value => value * -30);
+
+  const onMouseMove = useCallback(
+    (event: React.MouseEvent<HTMLElement>) => {
+      const bounds = event.currentTarget.getBoundingClientRect();
+      mouseX.set((event.clientX - bounds.left) / bounds.width - 0.5);
+      mouseY.set((event.clientY - bounds.top) / bounds.height - 0.5);
+    },
+    [mouseX, mouseY],
+  );
+
+  const onMouseLeave = useCallback(() => {
+    mouseX.set(0);
+    mouseY.set(0);
+  }, [mouseX, mouseY]);
+
+  const {actions, description, imageSrc} = heroData;
+  const primaryAction = actions.find(action => action.primary) ?? actions[0];
+  const workIcon = useMemo(() => <ArrowRightIcon className="h-4 w-4" />, []);
+  const downloadIcon = useMemo(() => <ArrowDownTrayIcon className="h-4 w-4" />, []);
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden" id={SectionId.Hero}>
-      {/* Gradient Overlays */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--color-gradient-glow))] opacity-50" />
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/50" />
+    <section
+      className="relative flex min-h-[100svh] items-center overflow-hidden bg-[#050505]"
+      id={SectionId.Hero}
+      onMouseLeave={onMouseLeave}
+      onMouseMove={onMouseMove}
+      ref={sectionRef}>
+      <MotionConfig reducedMotion="user">
+        {/* Ambient background */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+          <div className="absolute -left-32 -top-32 h-[34rem] w-[34rem] rounded-full bg-orange-500/[0.07] blur-3xl" />
+          <div className="absolute -bottom-40 -right-32 h-[38rem] w-[38rem] rounded-full bg-cyan-500/[0.06] blur-3xl" />
+          <div className="absolute left-1/2 top-1/3 h-72 w-72 -translate-x-1/2 rounded-full bg-amber-400/[0.05] blur-3xl" />
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[size:72px_72px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_40%,black,transparent)]" />
+        </div>
 
-      {/* Noise Texture Overlay */}
-      <div className="absolute inset-0 opacity-[0.03] bg-[url('data:image/svg+xml,%3Csvg viewBox=%220 0 256 256%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noise%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%224%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noise)%22/%3E%3C/svg%3E')]" />
-
-      {/* Floating Orb Decorations */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-orange-500/10 blur-3xl animate-pulse-slow" />
-      <div
-        className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full bg-cyan-500/10 blur-3xl animate-pulse-slow"
-        style={{animationDelay: '2s'}}
-      />
-      <div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 rounded-full bg-orange-500/5 blur-3xl animate-pulse-slow"
-        style={{animationDelay: '1s'}}
-      />
-
-      {/* Main Content */}
-      <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 py-20">
-        <div className="text-center">
-          {/* Profile Image */}
-          <motion.div
-            animate={{opacity: 1, scale: 1, y: 0}}
-            className="mb-10 relative inline-block"
-            initial={{opacity: 0, scale: 0.8, y: 30}}
-            transition={{duration: 0.8, ease: [0.175, 0.885, 0.32, 1.275]}}>
-            <div className="relative w-40 h-40 sm:w-48 sm:h-48 md:w-56 md:h-56 mx-auto">
-              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-orange-500 to-cyan-500 blur-2xl opacity-30 animate-pulse" />
-              <div className="absolute inset-0 rounded-full border-2 border-orange-500/30 animate-spin-slow" />
-              <Image
-                alt="Shubham Deo"
-                className="object-cover rounded-full border-4 border-white/10 shadow-2xl shadow-orange-500/20"
-                fill
-                priority
-                src="/images/profilepic.jpg"
+        {/* Particles */}
+        {!reduceMotion && (
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+            {particles.map((particle, index) => (
+              <motion.span
+                animate={{opacity: [0, 0.7, 0], y: [-8, 8, -8]}}
+                className="absolute rounded-full bg-orange-300/60 shadow-[0_0_8px_rgba(251,146,60,0.5)]"
+                key={index}
+                style={{
+                  height: particle.size,
+                  left: particle.left,
+                  right: particle.right,
+                  top: particle.top,
+                  width: particle.size,
+                }}
+                transition={{duration: particle.duration, ease: 'easeInOut', repeat: Infinity}}
               />
+            ))}
+          </div>
+        )}
+
+        {/* Content */}
+        <motion.div
+          className="relative z-10 mx-auto w-full max-w-7xl px-6 pb-24 pt-28 lg:px-8 lg:pt-32"
+          style={{opacity: contentOpacity, scale: contentScale}}>
+          <div className="grid grid-cols-1 items-center gap-y-14 sm:gap-y-16 lg:grid-cols-[1.1fr_0.9fr] lg:gap-x-16 xl:gap-x-24">
+            {/* Left column */}
+            <div className="flex min-w-0 flex-col items-start">
+              <motion.span
+                animate={{opacity: FADE_SHOW.opacity, y: FADE_SHOW.y}}
+                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3.5 py-1.5 text-xs text-neutral-300 backdrop-blur-md"
+                initial={{opacity: FADE_DELAY.opacity, y: FADE_DELAY.y}}
+                transition={{delay: 0.1, duration: 0.6, ease: floatEase}}>
+                <motion.span
+                  animate={reduceMotion ? undefined : {opacity: [1, 0.3, 1]}}
+                  aria-hidden="true"
+                  className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75 motion-reduce:animate-none" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                </motion.span>
+                Available for new projects
+              </motion.span>
+
+              <motion.p
+                animate={{opacity: FADE_SHOW.opacity, y: FADE_SHOW.y}}
+                className="mt-8 font-mono text-xs font-semibold uppercase tracking-[0.35em] text-orange-400"
+                initial={{opacity: FADE_DELAY.opacity, y: FADE_DELAY.y}}
+                transition={{delay: 0.2, duration: 0.6, ease: floatEase}}>
+                Hi, I&apos;m
+              </motion.p>
+
+              <motion.h1
+                animate={reduceMotion ? {opacity: 1} : {opacity: FADE_SHOW.opacity, y: FADE_SHOW.y}}
+                className="mt-3 text-4xl font-extrabold leading-[1.05] tracking-tight text-white sm:text-5xl lg:text-6xl xl:text-7xl"
+                initial={reduceMotion ? {opacity: 0} : FADE_DELAY}
+                transition={{delay: 0.3, duration: 0.7, ease: floatEase}}>
+                Shubham Deo
+              </motion.h1>
+
+              <motion.h2
+                animate={
+                  reduceMotion
+                    ? {opacity: 1}
+                    : {opacity: FADE_SHOW.opacity, y: FADE_SHOW.y, backgroundPosition: ['0% 50%', '100% 50%', '0% 50%']}
+                }
+                className="mt-3 bg-[linear-gradient(90deg,#f97316,#fbbf24,#06b6d4,#f97316)] bg-clip-text bg-[length:220%_auto] text-2xl font-bold tracking-tight text-transparent sm:text-3xl md:text-4xl xl:text-5xl"
+                initial={reduceMotion ? {opacity: 0} : {opacity: FADE_DELAY.opacity, y: FADE_DELAY.y}}
+                transition={{delay: 0.4, duration: 0.7, ease: floatEase}}>
+                {ROLE}
+              </motion.h2>
+
+              <motion.div
+                animate={reduceMotion ? {opacity: 1} : {opacity: FADE_SHOW.opacity, y: FADE_SHOW.y}}
+                className="mt-6 max-w-xl text-base leading-relaxed text-neutral-400 sm:text-lg"
+                initial={reduceMotion ? {opacity: 0} : FADE_DELAY}
+                transition={{delay: 0.55, duration: 0.7, ease: floatEase}}>
+                {description}
+              </motion.div>
+
+              <motion.div
+                animate={{opacity: FADE_SHOW.opacity, y: FADE_SHOW.y}}
+                className="mt-10 flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:gap-4"
+                initial={{opacity: FADE_DELAY.opacity, y: FADE_DELAY.y}}
+                transition={{delay: 0.7, duration: 0.6, ease: floatEase}}>
+                <MagneticButton
+                  className="w-full justify-center sm:w-auto"
+                  href={primaryAction.href}
+                  icon={workIcon}
+                  iconPosition="right"
+                  variant="primary">
+                  {primaryAction.text}
+                </MagneticButton>
+                <MagneticButton
+                  className="w-full justify-center sm:w-auto"
+                  download={actions[1]?.download}
+                  href={actions[1].href}
+                  icon={downloadIcon}
+                  iconPosition="right"
+                  variant="outline">
+                  {actions[1].text}
+                </MagneticButton>
+              </motion.div>
+
+              <motion.div
+                animate={{opacity: FADE_SHOW.opacity, y: FADE_SHOW.y}}
+                className="mt-8"
+                initial={{opacity: FADE_DELAY.opacity, y: FADE_DELAY.y}}
+                transition={{delay: 0.85, duration: 0.6, ease: floatEase}}>
+                <Link
+                  className="group inline-flex items-center gap-2 text-sm font-semibold text-neutral-300 transition-colors duration-300 hover:text-orange-400"
+                  href={`#${SectionId.Contact}`}>
+                  Let&apos;s Work Together
+                  <ArrowRightIcon className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                </Link>
+              </motion.div>
+
+              <motion.div
+                animate={{opacity: FADE_SHOW.opacity, y: FADE_SHOW.y}}
+                className="mt-10"
+                initial={{opacity: FADE_DELAY.opacity, y: FADE_DELAY.y}}
+                transition={{delay: 1, duration: 0.6, ease: floatEase}}>
+                <Socials />
+              </motion.div>
             </div>
 
-            {/* Status Indicator */}
+            {/* Right column — profile visual */}
             <motion.div
-              animate={{scale: [1, 1.2, 1]}}
-              className="absolute bottom-2 right-2 w-4 h-4 rounded-full bg-green-500 border-4 border-gray-900"
-              transition={{duration: 2, repeat: Infinity, ease: 'easeInOut'}}
-            />
-          </motion.div>
+              animate={reduceMotion ? {opacity: 1} : {opacity: FADE_SHOW.opacity, scale: 1, y: FADE_SHOW.y}}
+              className="relative mx-auto w-fit"
+              initial={reduceMotion ? {opacity: 0} : {opacity: FADE_DELAY.opacity, scale: 0.9, y: FADE_DELAY.y}}
+              transition={{delay: 0.45, duration: 0.9, ease: floatEase}}>
+              <motion.div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0"
+                style={{x: glowX, y: glowY}}>
+                <div className="absolute inset-8 rounded-full bg-[radial-gradient(circle_at_center,rgba(249,115,22,0.16),transparent_70%)] blur-2xl" />
+              </motion.div>
 
-          {/* Name */}
-          <h1 className="mb-6 text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold tracking-tight leading-tight">
-            <span className="text-white">{name.replace("I'm ", "I'm ")}</span>
-            <br />
-            <GradientText gradient="from-orange-400 via-orange-500 to-cyan-400">Full Stack Developer</GradientText>
-          </h1>
+              {/* Orbital rings */}
+              {!reduceMotion && (
+                <>
+                  <motion.div
+                    animate={{rotate: 360}}
+                    aria-hidden="true"
+                    className="absolute -inset-8 rounded-full border border-dashed border-white/10 sm:-inset-14"
+                    transition={{duration: 50, ease: 'linear', repeat: Infinity}}
+                  />
+                  <motion.div
+                    animate={{rotate: 360}}
+                    aria-hidden="true"
+                    className="absolute -inset-4 rounded-full border border-white/[0.06] sm:-inset-8"
+                    transition={{duration: 28, ease: 'linear', repeat: Infinity}}>
+                    <span className="absolute left-1/2 top-0 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-400 shadow-[0_0_14px_rgba(34,211,238,0.9)]" />
+                    <span className="absolute bottom-0 left-1/2 h-1.5 w-1.5 -translate-x-1/2 translate-y-1/2 rounded-full bg-orange-400 shadow-[0_0_10px_rgba(251,146,60,0.9)]" />
+                  </motion.div>
+                </>
+              )}
 
-          {/* Tagline */}
-          <p className="mb-10 max-w-3xl mx-auto text-lg sm:text-xl md:text-2xl text-gray-300 leading-relaxed">
-            {typeof description === 'object' ? (
-              <>
-                <span className="text-gray-200">I build </span>
-                <ShimmerText duration={3}>responsive, scalable & user-friendly web applications</ShimmerText>
-                <span className="text-gray-200"> using modern technologies.</span>
-              </>
-            ) : (
-              description
-            )}
-          </p>
+              {/* Floating tech cards */}
+              <motion.div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0"
+                style={{x: cardsX, y: cardsY}}>
+                {techCards.map((card, index) => (
+                  <motion.span
+                    animate={reduceMotion ? undefined : {y: [0, -8, 0]}}
+                    className={`absolute ${card.pos} inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-black/40 px-3 py-1.5 text-[11px] font-semibold text-neutral-200 shadow-lg shadow-black/40 backdrop-blur-md`}
+                    key={index}
+                    transition={{duration: card.duration, delay: card.delay, ease: 'easeInOut', repeat: Infinity}}>
+                    <span className={`h-1.5 w-1.5 rounded-full ${card.dot}`} />
+                    {card.label}
+                  </motion.span>
+                ))}
+              </motion.div>
 
-          {/* Tech Stack Badges */}
-          <motion.div
-            animate={{opacity: 1, y: 0}}
-            className="mb-10 flex flex-wrap items-center justify-center gap-3"
-            initial={{opacity: 0, y: 30}}
-            transition={{duration: 0.8, delay: 0.6, ease: [0.175, 0.885, 0.32, 1.275]}}>
-            {['TypeScript', 'React', 'Next.js', 'Node.js', 'PostgreSQL', 'Tailwind', 'AI/ML', 'MCP'].map((tech, i) => (
-              <motion.span
-                animate={{opacity: 1, scale: 1}}
-                className="px-4 py-1.5 text-sm font-medium text-gray-200 bg-white/5 backdrop-blur-sm border border-white/10 rounded-full hover:border-orange-500/50 hover:bg-orange-500/10 transition-all duration-300"
-                initial={{opacity: 0, scale: 0.8}}
-                key={tech}
-                transition={{delay: 0.6 + i * 0.08, duration: 0.5, ease: [0.175, 0.885, 0.32, 1.275]}}>
-                {tech}
-              </motion.span>
-            ))}
-          </motion.div>
-
-          {/* CTA Buttons */}
-          <motion.div
-            animate={{opacity: 1, y: 0}}
-            className="mb-16 mx-auto grid w-full max-w-lg grid-cols-1 gap-4 sm:grid-cols-2"
-            initial={{opacity: 0, y: 30}}
-            transition={{duration: 0.8, delay: 0.8, ease: [0.175, 0.885, 0.32, 1.275]}}>
-            {actions.map((action, _index) => (
-              <MagneticButton
-                className="w-full"
-                download={action.download}
-                href={action.href}
-                key={action.text}
-                rel={action.download ? undefined : action.href.startsWith('#') ? undefined : 'noopener noreferrer'}
-                size="lg"
-                strength={25}
-                target={action.download ? undefined : action.href.startsWith('#') ? undefined : '_blank'}
-                variant="primary">
-                {action.text}
-                {action.Icon && <action.Icon className="w-5 h-5" />}
-              </MagneticButton>
-            ))}
-          </motion.div>
-
-          {/* Social Links */}
-          <motion.div
-            animate={{opacity: 1, y: 0}}
-            className="flex items-center justify-center gap-6"
-            initial={{opacity: 0, y: 30}}
-            transition={{duration: 0.8, delay: 1, ease: [0.175, 0.885, 0.32, 1.275]}}>
-            <Socials />
-          </motion.div>
-
-          {/* Scroll Indicator */}
-          <motion.div
-            animate={{opacity: 1}}
-            className="mt-16 flex flex-col items-center gap-3 text-gray-400"
-            initial={{opacity: 0}}
-            transition={{delay: 1.5, duration: 0.8}}>
-            <motion.div className="flex flex-col items-center gap-3" style={{opacity: scrollFade}}>
-              <span className="text-xs font-medium uppercase tracking-widest">Scroll to explore</span>
-              <Link
-                aria-label="Scroll to about section"
-                className="flex h-12 w-12 items-center justify-center rounded-full bg-white/5 backdrop-blur-sm border border-white/10 hover:border-orange-500/50 hover:bg-orange-500/10 transition-all duration-300"
-                href={`#${SectionId.About}`}>
-                <motion.div animate={{y: [0, 8, 0]}} transition={{duration: 1.5, repeat: Infinity, ease: 'easeInOut'}}>
-                  <ChevronDownIcon className="h-6 w-6" />
+              {/* Animated gradient portrait */}
+              <motion.div
+                className="group relative overflow-hidden rounded-full bg-[#080808] p-[3px] shadow-[0_0_80px_-20px_rgba(249,115,22,0.45)]"
+                style={{x: profileX, y: profileY}}>
+                {!reduceMotion && (
+                  <motion.div
+                    animate={{rotate: 360}}
+                    aria-hidden="true"
+                    className="absolute -inset-[22%] rounded-full bg-[conic-gradient(from_0deg,#f97316,#fbbf24,#06b6d4,#f97316)]"
+                    transition={{duration: 14, ease: 'linear', repeat: Infinity}}
+                  />
+                )}
+                <motion.div
+                  animate={reduceMotion ? undefined : {y: [0, -10, 0]}}
+                  className="relative aspect-square w-56 overflow-hidden rounded-full sm:w-72 lg:w-80"
+                  transition={{duration: 7, ease: 'easeInOut', repeat: Infinity}}>
+                  <Image
+                    alt="Portrait of Shubham Deo"
+                    className="h-full w-full object-cover"
+                    height={1448}
+                    priority
+                    src={imageSrc}
+                    width={1086}
+                  />
+                  <div className="absolute inset-0 rounded-full ring-1 ring-inset ring-white/10 transition-transform duration-500 group-hover:scale-105" />
                 </motion.div>
-              </Link>
+              </motion.div>
+
+              {/* Status pill */}
+              <motion.div
+                animate={reduceMotion ? undefined : {y: [0, -6, 0]}}
+                className="absolute -bottom-3 left-6 inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-[11px] font-semibold text-emerald-300 backdrop-blur-md"
+                transition={{duration: 5, delay: 1.2, ease: 'easeInOut', repeat: Infinity}}>
+                <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                Open to work
+              </motion.div>
             </motion.div>
-          </motion.div>
-        </div>
-      </div>
+          </div>
+        </motion.div>
+
+        {/* Scroll indicator */}
+        <motion.div
+          animate={{opacity: 1}}
+          className="absolute bottom-6 left-1/2 z-10"
+          initial={{opacity: 0}}
+          style={{x: '-50%'}}
+          transition={{delay: 1.4, duration: 0.8}}
+          whileHover={{y: 4}}>
+          <motion.a
+            animate={reduceMotion ? undefined : {y: [0, 6, 0]}}
+            className="flex flex-col items-center gap-2 text-neutral-500 transition-colors duration-300 hover:text-orange-400"
+            href={`#${SectionId.About}`}
+            style={{opacity: indicatorOpacity}}
+            transition={{duration: 1.8, ease: 'easeInOut', repeat: Infinity}}>
+            <span className="text-[10px] uppercase tracking-[0.3em]">Scroll to explore</span>
+            <span aria-hidden="true" className="text-lg">
+              ↓
+            </span>
+          </motion.a>
+        </motion.div>
+      </MotionConfig>
     </section>
   );
-};
+});
 
-export default memo(Hero);
+Hero.displayName = 'Hero';
+export default Hero;
